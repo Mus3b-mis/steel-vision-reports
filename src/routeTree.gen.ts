@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AiInspectionRouteImport } from './routes/ai-inspection'
 import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as EquipmentRouteImport } from './routes/equipment'
 import { Route as InspectionsRouteImport } from './routes/inspections'
@@ -17,6 +18,11 @@ import { Route as InspectionsRouteImport } from './routes/inspections'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiInspectionRoute = AiInspectionRouteImport.update({
+  id: '/ai-inspection',
+  path: '/ai-inspection',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComplianceRoute = ComplianceRouteImport.update({
@@ -37,12 +43,14 @@ const InspectionsRoute = InspectionsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai-inspection': typeof AiInspectionRoute
   '/compliance': typeof ComplianceRoute
   '/equipment': typeof EquipmentRoute
   '/inspections': typeof InspectionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai-inspection': typeof AiInspectionRoute
   '/compliance': typeof ComplianceRoute
   '/equipment': typeof EquipmentRoute
   '/inspections': typeof InspectionsRoute
@@ -50,20 +58,29 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ai-inspection': typeof AiInspectionRoute
   '/compliance': typeof ComplianceRoute
   '/equipment': typeof EquipmentRoute
   '/inspections': typeof InspectionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/compliance' | '/equipment' | '/inspections'
+  fullPaths:
+    '/' | '/ai-inspection' | '/compliance' | '/equipment' | '/inspections'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/compliance' | '/equipment' | '/inspections'
-  id: '__root__' | '/' | '/compliance' | '/equipment' | '/inspections'
+  to: '/' | '/ai-inspection' | '/compliance' | '/equipment' | '/inspections'
+  id:
+    | '__root__'
+    | '/'
+    | '/ai-inspection'
+    | '/compliance'
+    | '/equipment'
+    | '/inspections'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiInspectionRoute: typeof AiInspectionRoute
   ComplianceRoute: typeof ComplianceRoute
   EquipmentRoute: typeof EquipmentRoute
   InspectionsRoute: typeof InspectionsRoute
@@ -76,6 +93,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-inspection': {
+      id: '/ai-inspection'
+      path: '/ai-inspection'
+      fullPath: '/ai-inspection'
+      preLoaderRoute: typeof AiInspectionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compliance': {
@@ -104,6 +128,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiInspectionRoute: AiInspectionRoute,
   ComplianceRoute: ComplianceRoute,
   EquipmentRoute: EquipmentRoute,
   InspectionsRoute: InspectionsRoute,
