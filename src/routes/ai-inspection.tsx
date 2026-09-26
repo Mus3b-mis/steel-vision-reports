@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Sparkles, Upload, X, CheckCircle2 } from "lucide-react";
+import { Loader2, Sparkles, Camera, X, CheckCircle2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -92,8 +92,13 @@ function AiInspectionPage() {
             ref={inputRef}
             type="file"
             accept="image/*"
+            capture="environment"
             className="hidden"
-            onChange={(e) => pickFile(e.target.files?.[0])}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              pickFile(file);
+            }}
           />
 
           {preview ? (
@@ -112,17 +117,15 @@ function AiInspectionPage() {
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => inputRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                pickFile(e.dataTransfer.files?.[0]);
-              }}
               className="mt-4 flex w-full flex-col items-center gap-3 rounded-xl border border-dashed border-input bg-secondary/25 px-6 py-10 text-center transition-colors hover:border-primary/50 hover:bg-secondary/40"
             >
-              <Upload className="size-7 text-primary" />
-              <span className="text-sm font-medium">اسحب الصورة هنا أو اضغط للاختيار</span>
-              <span className="text-xs text-muted-foreground">JPG أو PNG، حتى 8 ميجابايت</span>
+              <Camera className="size-7 text-primary" />
+              <span className="text-sm font-medium">التقاط صورة بالكاميرا الآن</span>
+              <span className="text-xs text-muted-foreground">
+                يُفتح كاميرا الجهاز مباشرة — لا يمكن الاختيار من الملفات أو الاستوديو
+              </span>
             </button>
           )}
 
