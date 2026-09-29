@@ -14,16 +14,254 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assets: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          created_by: string | null
+          health_score: number
+          id: string
+          last_inspection: string | null
+          name: string
+          next_inspection: string | null
+          organization_id: string
+          serial: string
+          site: string
+          status: string
+        }
+        Insert: {
+          category?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          health_score?: number
+          id?: string
+          last_inspection?: string | null
+          name: string
+          next_inspection?: string | null
+          organization_id: string
+          serial?: string
+          site?: string
+          status?: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          health_score?: number
+          id?: string
+          last_inspection?: string | null
+          name?: string
+          next_inspection?: string | null
+          organization_id?: string
+          serial?: string
+          site?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspections: {
+        Row: {
+          asset_id: string | null
+          asset_name: string
+          code: string
+          created_at: string
+          created_by: string | null
+          findings: string
+          findings_count: number
+          health_score: number | null
+          id: string
+          inspected_on: string
+          inspector_name: string
+          organization_id: string
+          report: Json | null
+          result: string
+          source: string
+        }
+        Insert: {
+          asset_id?: string | null
+          asset_name: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          findings?: string
+          findings_count?: number
+          health_score?: number | null
+          id?: string
+          inspected_on?: string
+          inspector_name?: string
+          organization_id: string
+          report?: Json | null
+          result: string
+          source?: string
+        }
+        Update: {
+          asset_id?: string | null
+          asset_name?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          findings?: string
+          findings_count?: number
+          health_score?: number | null
+          id?: string
+          inspected_on?: string
+          inspector_name?: string
+          organization_id?: string
+          report?: Json | null
+          result?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspections_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          organization_id: string
+          role: Database["public"]["Enums"]["org_role"]
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          organization_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          organization_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_invites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          job_title: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id: string
+          job_title?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          job_title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      ensure_account: { Args: never; Returns: string }
+      is_org_admin: { Args: never; Returns: boolean }
+      user_org_id: { Args: never; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      org_role: "owner" | "admin" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +388,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      org_role: ["owner", "admin", "member"],
+    },
   },
 } as const
