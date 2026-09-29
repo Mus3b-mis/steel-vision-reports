@@ -9,129 +9,140 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AiInspectionRouteImport } from './routes/ai-inspection'
-import { Route as ComplianceRouteImport } from './routes/compliance'
-import { Route as EquipmentRouteImport } from './routes/equipment'
-import { Route as InspectionsRouteImport } from './routes/inspections'
+import { Route as AuthenticatedAiInspectionRouteImport } from './routes/_authenticated/ai-inspection'
+import { Route as AuthenticatedComplianceRouteImport } from './routes/_authenticated/compliance'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedEquipmentRouteImport } from './routes/_authenticated/equipment'
+import { Route as AuthenticatedInspectionsRouteImport } from './routes/_authenticated/inspections'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AiInspectionRoute = AiInspectionRouteImport.update({
-  id: '/ai-inspection',
-  path: '/ai-inspection',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ComplianceRoute = ComplianceRouteImport.update({
-  id: '/compliance',
+const AuthenticatedAiInspectionRoute =
+  AuthenticatedAiInspectionRouteImport.update({
+    id: '/_authenticated/ai-inspection',
+    path: '/ai-inspection',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedComplianceRoute = AuthenticatedComplianceRouteImport.update({
+  id: '/_authenticated/compliance',
   path: '/compliance',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EquipmentRoute = EquipmentRouteImport.update({
-  id: '/equipment',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/_authenticated/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedEquipmentRoute = AuthenticatedEquipmentRouteImport.update({
+  id: '/_authenticated/equipment',
   path: '/equipment',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InspectionsRoute = InspectionsRouteImport.update({
-  id: '/inspections',
-  path: '/inspections',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedInspectionsRoute =
+  AuthenticatedInspectionsRouteImport.update({
+    id: '/_authenticated/inspections',
+    path: '/inspections',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/ai-inspection': typeof AiInspectionRoute
-  '/compliance': typeof ComplianceRoute
-  '/equipment': typeof EquipmentRoute
-  '/inspections': typeof InspectionsRoute
+  '/ai-inspection': typeof AuthenticatedAiInspectionRoute
+  '/compliance': typeof AuthenticatedComplianceRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/equipment': typeof AuthenticatedEquipmentRoute
+  '/inspections': typeof AuthenticatedInspectionsRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/ai-inspection': typeof AiInspectionRoute
-  '/compliance': typeof ComplianceRoute
-  '/equipment': typeof EquipmentRoute
-  '/inspections': typeof InspectionsRoute
+  '/ai-inspection': typeof AuthenticatedAiInspectionRoute
+  '/compliance': typeof AuthenticatedComplianceRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/equipment': typeof AuthenticatedEquipmentRoute
+  '/inspections': typeof AuthenticatedInspectionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/ai-inspection': typeof AiInspectionRoute
-  '/compliance': typeof ComplianceRoute
-  '/equipment': typeof EquipmentRoute
-  '/inspections': typeof InspectionsRoute
+  '/_authenticated/ai-inspection': typeof AuthenticatedAiInspectionRoute
+  '/_authenticated/compliance': typeof AuthenticatedComplianceRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/equipment': typeof AuthenticatedEquipmentRoute
+  '/_authenticated/inspections': typeof AuthenticatedInspectionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/ai-inspection' | '/compliance' | '/equipment' | '/inspections'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ai-inspection' | '/compliance' | '/equipment' | '/inspections'
-  id:
-    | '__root__'
-    | '/'
     | '/ai-inspection'
     | '/compliance'
+    | '/dashboard'
     | '/equipment'
     | '/inspections'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/ai-inspection'
+    | '/compliance'
+    | '/dashboard'
+    | '/equipment'
+    | '/inspections'
+  id:
+    | '__root__'
+    | '/_authenticated/ai-inspection'
+    | '/_authenticated/compliance'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/equipment'
+    | '/_authenticated/inspections'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AiInspectionRoute: typeof AiInspectionRoute
-  ComplianceRoute: typeof ComplianceRoute
-  EquipmentRoute: typeof EquipmentRoute
-  InspectionsRoute: typeof InspectionsRoute
+  AuthenticatedAiInspectionRoute: typeof AuthenticatedAiInspectionRoute
+  AuthenticatedComplianceRoute: typeof AuthenticatedComplianceRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEquipmentRoute: typeof AuthenticatedEquipmentRoute
+  AuthenticatedInspectionsRoute: typeof AuthenticatedInspectionsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ai-inspection': {
-      id: '/ai-inspection'
+    '/_authenticated/ai-inspection': {
+      id: '/_authenticated/ai-inspection'
       path: '/ai-inspection'
       fullPath: '/ai-inspection'
-      preLoaderRoute: typeof AiInspectionRouteImport
+      preLoaderRoute: typeof AuthenticatedAiInspectionRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/compliance': {
-      id: '/compliance'
+    '/_authenticated/compliance': {
+      id: '/_authenticated/compliance'
       path: '/compliance'
       fullPath: '/compliance'
-      preLoaderRoute: typeof ComplianceRouteImport
+      preLoaderRoute: typeof AuthenticatedComplianceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/equipment': {
-      id: '/equipment'
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/equipment': {
+      id: '/_authenticated/equipment'
       path: '/equipment'
       fullPath: '/equipment'
-      preLoaderRoute: typeof EquipmentRouteImport
+      preLoaderRoute: typeof AuthenticatedEquipmentRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/inspections': {
-      id: '/inspections'
+    '/_authenticated/inspections': {
+      id: '/_authenticated/inspections'
       path: '/inspections'
       fullPath: '/inspections'
-      preLoaderRoute: typeof InspectionsRouteImport
+      preLoaderRoute: typeof AuthenticatedInspectionsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AiInspectionRoute: AiInspectionRoute,
-  ComplianceRoute: ComplianceRoute,
-  EquipmentRoute: EquipmentRoute,
-  InspectionsRoute: InspectionsRoute,
+  AuthenticatedAiInspectionRoute: AuthenticatedAiInspectionRoute,
+  AuthenticatedComplianceRoute: AuthenticatedComplianceRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEquipmentRoute: AuthenticatedEquipmentRoute,
+  AuthenticatedInspectionsRoute: AuthenticatedInspectionsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

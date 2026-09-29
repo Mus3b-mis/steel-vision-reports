@@ -25,7 +25,7 @@ import { AppShell } from "@/components/AppShell";
 import { AssetStatusBadge, ComplianceBadge, ResultBadge } from "@/components/StatusBadge";
 import { assets, inspections, monthlyInspections, stats } from "@/lib/demo-data";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "لوحة المعلومات | وثيق" },

@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { ResultBadge } from "@/components/StatusBadge";
 import { inspections } from "@/lib/demo-data";
 
-export const Route = createFileRoute("/inspections")({
+export const Route = createFileRoute("/_authenticated/inspections")({
   head: () => ({
     meta: [
       { title: "سجل الفحوصات | وثيق" },

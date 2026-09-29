@@ -5,7 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { AssetStatusBadge, ComplianceBadge } from "@/components/StatusBadge";
 import { assets, categories, sites } from "@/lib/demo-data";
 
-export const Route = createFileRoute("/equipment")({
+export const Route = createFileRoute("/_authenticated/equipment")({
   head: () => ({
     meta: [
       { title: "سجل المعدات | وثيق" },
