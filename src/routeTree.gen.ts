@@ -10,80 +10,133 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AiInspectionRouteImport } from './routes/ai-inspection'
-import { Route as ComplianceRouteImport } from './routes/compliance'
-import { Route as EquipmentRouteImport } from './routes/equipment'
-import { Route as InspectionsRouteImport } from './routes/inspections'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AuthenticatedAiInspectionRouteImport } from './routes/_authenticated/ai-inspection'
+import { Route as AuthenticatedComplianceRouteImport } from './routes/_authenticated/compliance'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedEquipmentRouteImport } from './routes/_authenticated/equipment'
+import { Route as AuthenticatedInspectionsRouteImport } from './routes/_authenticated/inspections'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AiInspectionRoute = AiInspectionRouteImport.update({
-  id: '/ai-inspection',
-  path: '/ai-inspection',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ComplianceRoute = ComplianceRouteImport.update({
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAiInspectionRoute =
+  AuthenticatedAiInspectionRouteImport.update({
+    id: '/ai-inspection',
+    path: '/ai-inspection',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedComplianceRoute = AuthenticatedComplianceRouteImport.update({
   id: '/compliance',
   path: '/compliance',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const EquipmentRoute = EquipmentRouteImport.update({
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEquipmentRoute = AuthenticatedEquipmentRouteImport.update({
   id: '/equipment',
   path: '/equipment',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const InspectionsRoute = InspectionsRouteImport.update({
-  id: '/inspections',
-  path: '/inspections',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedInspectionsRoute =
+  AuthenticatedInspectionsRouteImport.update({
+    id: '/inspections',
+    path: '/inspections',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/ai-inspection': typeof AiInspectionRoute
-  '/compliance': typeof ComplianceRoute
-  '/equipment': typeof EquipmentRoute
-  '/inspections': typeof InspectionsRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/ai-inspection': typeof AuthenticatedAiInspectionRoute
+  '/compliance': typeof AuthenticatedComplianceRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/equipment': typeof AuthenticatedEquipmentRoute
+  '/inspections': typeof AuthenticatedInspectionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/ai-inspection': typeof AiInspectionRoute
-  '/compliance': typeof ComplianceRoute
-  '/equipment': typeof EquipmentRoute
-  '/inspections': typeof InspectionsRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/ai-inspection': typeof AuthenticatedAiInspectionRoute
+  '/compliance': typeof AuthenticatedComplianceRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/equipment': typeof AuthenticatedEquipmentRoute
+  '/inspections': typeof AuthenticatedInspectionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/ai-inspection': typeof AiInspectionRoute
-  '/compliance': typeof ComplianceRoute
-  '/equipment': typeof EquipmentRoute
-  '/inspections': typeof InspectionsRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/ai-inspection': typeof AuthenticatedAiInspectionRoute
+  '/_authenticated/compliance': typeof AuthenticatedComplianceRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/equipment': typeof AuthenticatedEquipmentRoute
+  '/_authenticated/inspections': typeof AuthenticatedInspectionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/ai-inspection' | '/compliance' | '/equipment' | '/inspections'
+    | '/'
+    | '/auth'
+    | '/reset-password'
+    | '/ai-inspection'
+    | '/compliance'
+    | '/dashboard'
+    | '/equipment'
+    | '/inspections'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ai-inspection' | '/compliance' | '/equipment' | '/inspections'
+  to:
+    | '/'
+    | '/auth'
+    | '/reset-password'
+    | '/ai-inspection'
+    | '/compliance'
+    | '/dashboard'
+    | '/equipment'
+    | '/inspections'
   id:
     | '__root__'
     | '/'
-    | '/ai-inspection'
-    | '/compliance'
-    | '/equipment'
-    | '/inspections'
+    | '/_authenticated'
+    | '/auth'
+    | '/reset-password'
+    | '/_authenticated/ai-inspection'
+    | '/_authenticated/compliance'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/equipment'
+    | '/_authenticated/inspections'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AiInspectionRoute: typeof AiInspectionRoute
-  ComplianceRoute: typeof ComplianceRoute
-  EquipmentRoute: typeof EquipmentRoute
-  InspectionsRoute: typeof InspectionsRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -95,43 +148,89 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/ai-inspection': {
-      id: '/ai-inspection'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/ai-inspection': {
+      id: '/_authenticated/ai-inspection'
       path: '/ai-inspection'
       fullPath: '/ai-inspection'
-      preLoaderRoute: typeof AiInspectionRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedAiInspectionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/compliance': {
-      id: '/compliance'
+    '/_authenticated/compliance': {
+      id: '/_authenticated/compliance'
       path: '/compliance'
       fullPath: '/compliance'
-      preLoaderRoute: typeof ComplianceRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedComplianceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/equipment': {
-      id: '/equipment'
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/equipment': {
+      id: '/_authenticated/equipment'
       path: '/equipment'
       fullPath: '/equipment'
-      preLoaderRoute: typeof EquipmentRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedEquipmentRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/inspections': {
-      id: '/inspections'
+    '/_authenticated/inspections': {
+      id: '/_authenticated/inspections'
       path: '/inspections'
       fullPath: '/inspections'
-      preLoaderRoute: typeof InspectionsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedInspectionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAiInspectionRoute: typeof AuthenticatedAiInspectionRoute
+  AuthenticatedComplianceRoute: typeof AuthenticatedComplianceRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEquipmentRoute: typeof AuthenticatedEquipmentRoute
+  AuthenticatedInspectionsRoute: typeof AuthenticatedInspectionsRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAiInspectionRoute: AuthenticatedAiInspectionRoute,
+  AuthenticatedComplianceRoute: AuthenticatedComplianceRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEquipmentRoute: AuthenticatedEquipmentRoute,
+  AuthenticatedInspectionsRoute: AuthenticatedInspectionsRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AiInspectionRoute: AiInspectionRoute,
-  ComplianceRoute: ComplianceRoute,
-  EquipmentRoute: EquipmentRoute,
-  InspectionsRoute: InspectionsRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

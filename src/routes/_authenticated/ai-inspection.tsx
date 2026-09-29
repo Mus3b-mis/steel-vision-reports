@@ -9,7 +9,7 @@ import { SeverityBadge, ResultBadge, AssetStatusBadge } from "@/components/Statu
 import { assets } from "@/lib/demo-data";
 import { analyzeAssetImage, type AiInspectionReport } from "@/lib/inspect.functions";
 
-export const Route = createFileRoute("/ai-inspection")({
+export const Route = createFileRoute("/_authenticated/ai-inspection")({
   head: () => ({
     meta: [
       { title: "الفحص الذكي بالصور | وثيق" },

@@ -5,7 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { ComplianceBadge } from "@/components/StatusBadge";
 import { assets, sites, stats, type ComplianceState } from "@/lib/demo-data";
 
-export const Route = createFileRoute("/compliance")({
+export const Route = createFileRoute("/_authenticated/compliance")({
   head: () => ({
     meta: [
       { title: "حالة الامتثال | وثيق" },
