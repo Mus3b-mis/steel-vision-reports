@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
+import { AddAssetForm } from "@/components/AddAssetForm";
 import { AssetStatusBadge, ComplianceBadge } from "@/components/StatusBadge";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { orgDataQuery } from "@/lib/org-data";
@@ -45,6 +46,7 @@ function EquipmentPage() {
 
   return (
     <AppShell title="سجل المعدات" subtitle="جميع الأصول المسجلة في المنصة مع حالتها التشغيلية.">
+      <AddAssetForm />
       <div className="frost flex flex-wrap gap-3 rounded-2xl p-4">
         <input
           value={query}
