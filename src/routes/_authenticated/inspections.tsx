@@ -4,7 +4,8 @@ import { useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { ResultBadge } from "@/components/StatusBadge";
-import { inspections } from "@/lib/demo-data";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { orgDataQuery } from "@/lib/org-data";
 
 export const Route = createFileRoute("/_authenticated/inspections")({
   head: () => ({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/_authenticated/inspections")({
       },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(orgDataQuery),
   component: InspectionsPage,
 });
 
@@ -32,6 +34,7 @@ const filters = [
 ] as const;
 
 function InspectionsPage() {
+  const { inspections } = useSuspenseQuery(orgDataQuery).data;
   const [filter, setFilter] = useState<(typeof filters)[number]["key"]>("all");
   const rows = inspections.filter((i) => filter === "all" || i.result === filter);
 

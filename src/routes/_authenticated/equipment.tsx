@@ -3,7 +3,8 @@ import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { AssetStatusBadge, ComplianceBadge } from "@/components/StatusBadge";
-import { assets, categories, sites } from "@/lib/demo-data";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { orgDataQuery } from "@/lib/org-data";
 
 export const Route = createFileRoute("/_authenticated/equipment")({
   head: () => ({
@@ -20,10 +21,12 @@ export const Route = createFileRoute("/_authenticated/equipment")({
       },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(orgDataQuery),
   component: EquipmentPage,
 });
 
 function EquipmentPage() {
+  const { assets, categories, sites } = useSuspenseQuery(orgDataQuery).data;
   const [query, setQuery] = useState("");
   const [site, setSite] = useState("all");
   const [category, setCategory] = useState("all");
@@ -37,7 +40,7 @@ function EquipmentPage() {
           (query.trim() === "" ||
             `${a.name} ${a.id} ${a.serial}`.toLowerCase().includes(query.trim().toLowerCase())),
       ),
-    [query, site, category],
+    [assets, query, site, category],
   );
 
   return (
