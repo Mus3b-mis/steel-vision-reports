@@ -6,7 +6,9 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { SeverityBadge, ResultBadge, AssetStatusBadge } from "@/components/StatusBadge";
-import { assets } from "@/lib/demo-data";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { meQuery, orgDataQuery } from "@/lib/org-data";
 import { analyzeAssetImage, type AiInspectionReport } from "@/lib/inspect.functions";
 
 export const Route = createFileRoute("/_authenticated/ai-inspection")({
@@ -37,6 +39,56 @@ function AiInspectionPage() {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<AiInspectionReport | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { data: org } = useQuery(orgDataQuery);
+  const { data: me } = useQuery(meQuery);
+  const queryClient = useQueryClient();
+  const assets = org?.assets ?? [];
+
+  async function approve() {
+    if (!report || !me) return;
+    setSaving(true);
+    try {
+      const match = assets.find((a) => a.name === assetName.trim());
+      const today = new Date().toISOString().slice(0, 10);
+      const findingsText = [report.summary, ...report.findings.map((f) => `${f.title}: ${f.detail}`)].join("\n");
+      const { error } = await supabase.from("inspections").insert({
+        organization_id: me.orgId,
+        asset_id: match?.uuid ?? null,
+        asset_name: match?.name ?? (assetName.trim() || report.assetGuess),
+        inspector_name: me.fullName,
+        result: report.suggestedResult,
+        findings: findingsText,
+        findings_count: report.findings.length,
+        source: "ai",
+        health_score: Math.round(report.healthScore),
+        report: report as never,
+        created_by: me.userId,
+      });
+      if (error) throw error;
+      if (match) {
+        const next = new Date(Date.now() + 90 * 86_400_000).toISOString().slice(0, 10);
+        const { error: e2 } = await supabase
+          .from("assets")
+          .update({
+            last_inspection: today,
+            next_inspection: next,
+            health_score: Math.max(0, Math.min(100, Math.round(report.healthScore))),
+            status: report.condition,
+          })
+          .eq("id", match.uuid);
+        if (e2) throw e2;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["org-data"] });
+      setSaved(true);
+      toast.success(match ? "تم اعتماد التقرير وتحديث حالة المعدة" : "تم اعتماد التقرير وإضافته لسجل الفحوصات");
+    } catch (err) {
+      console.error(err);
+      toast.error("تعذّر حفظ التقرير، حاول مرة أخرى");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function pickFile(file: File | undefined) {
     if (!file) return;
@@ -131,7 +183,7 @@ function AiInspectionPage() {
 
           <div className="mt-5 space-y-3">
             <label className="block text-xs text-muted-foreground">
-              اسم الأصل (اختياري)
+              اسم الأصل (اختر من سجل المعدات لربط التقرير بها)
               <input
                 value={assetName}
                 onChange={(e) => setAssetName(e.target.value)}
@@ -239,10 +291,8 @@ function AiInspectionPage() {
 
               <div className="flex flex-wrap gap-2 border-t border-border pt-4">
                 <button
-                  onClick={() => {
-                    setSaved(true);
-                    toast.success("تم اعتماد التقرير وإضافته لسجل الفحوصات (نسخة تجريبية)");
-                  }}
+                  onClick={approve}
+                  disabled={saving || saved}
                   className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
                 >
                   <CheckCircle2 className="size-4" />
