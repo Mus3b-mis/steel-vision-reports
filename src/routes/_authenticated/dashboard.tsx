@@ -23,7 +23,8 @@ import {
 
 import { AppShell } from "@/components/AppShell";
 import { AssetStatusBadge, ComplianceBadge, ResultBadge } from "@/components/StatusBadge";
-import { assets, inspections, monthlyInspections, stats } from "@/lib/demo-data";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { orgDataQuery } from "@/lib/org-data";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -40,16 +41,17 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(orgDataQuery),
   component: Dashboard,
 });
 
-const complianceData = [
+function Dashboard() {
+  const { assets, inspections, monthly: monthlyInspections, stats } = useSuspenseQuery(orgDataQuery).data;
+  const complianceData = [
   { name: "مطابق", value: stats.compliant, fill: "var(--color-chart-2)" },
   { name: "قريب الاستحقاق", value: stats.dueSoon, fill: "var(--color-chart-3)" },
   { name: "متأخر", value: stats.overdue, fill: "var(--color-chart-4)" },
 ];
-
-function Dashboard() {
   const upcoming = [...assets]
     .sort((a, b) => a.nextInspection.localeCompare(b.nextInspection))
     .slice(0, 5);
@@ -69,7 +71,7 @@ function Dashboard() {
         <StatCard
           icon={ShieldCheck}
           label="نسبة الامتثال"
-          value={`${Math.round((stats.compliant / stats.totalAssets) * 100)}%`}
+          value={`${stats.complianceRate}%`}
           hint={`${stats.compliant} أصل مطابق`}
           tone="good"
         />

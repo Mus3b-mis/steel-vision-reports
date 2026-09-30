@@ -18,6 +18,7 @@ import { Route as AuthenticatedComplianceRouteImport } from './routes/_authentic
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEquipmentRouteImport } from './routes/_authenticated/equipment'
 import { Route as AuthenticatedInspectionsRouteImport } from './routes/_authenticated/inspections'
+import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -65,6 +66,11 @@ const AuthenticatedInspectionsRoute =
     path: '/inspections',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/equipment': typeof AuthenticatedEquipmentRoute
   '/inspections': typeof AuthenticatedInspectionsRoute
+  '/team': typeof AuthenticatedTeamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/equipment': typeof AuthenticatedEquipmentRoute
   '/inspections': typeof AuthenticatedInspectionsRoute
+  '/team': typeof AuthenticatedTeamRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/equipment': typeof AuthenticatedEquipmentRoute
   '/_authenticated/inspections': typeof AuthenticatedInspectionsRoute
+  '/_authenticated/team': typeof AuthenticatedTeamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/equipment'
     | '/inspections'
+    | '/team'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/equipment'
     | '/inspections'
+    | '/team'
   id:
     | '__root__'
     | '/'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/equipment'
     | '/_authenticated/inspections'
+    | '/_authenticated/team'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -204,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInspectionsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/team': {
+      id: '/_authenticated/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof AuthenticatedTeamRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -213,6 +232,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEquipmentRoute: typeof AuthenticatedEquipmentRoute
   AuthenticatedInspectionsRoute: typeof AuthenticatedInspectionsRoute
+  AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -221,6 +241,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEquipmentRoute: AuthenticatedEquipmentRoute,
   AuthenticatedInspectionsRoute: AuthenticatedInspectionsRoute,
+  AuthenticatedTeamRoute: AuthenticatedTeamRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

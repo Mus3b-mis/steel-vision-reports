@@ -3,7 +3,9 @@ import { ShieldCheck, Clock, AlertTriangle } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { ComplianceBadge } from "@/components/StatusBadge";
-import { assets, sites, stats, type ComplianceState } from "@/lib/demo-data";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { orgDataQuery } from "@/lib/org-data";
+import type { ComplianceState } from "@/lib/demo-data";
 
 export const Route = createFileRoute("/_authenticated/compliance")({
   head: () => ({
@@ -20,13 +22,15 @@ export const Route = createFileRoute("/_authenticated/compliance")({
       },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(orgDataQuery),
   component: CompliancePage,
 });
 
 const order: ComplianceState[] = ["overdue", "due_soon", "compliant"];
 
 function CompliancePage() {
-  const rate = Math.round((stats.compliant / stats.totalAssets) * 100);
+  const { assets, sites, stats } = useSuspenseQuery(orgDataQuery).data;
+  const rate = stats.complianceRate;
 
   return (
     <AppShell
@@ -63,7 +67,7 @@ function CompliancePage() {
           {sites.map((site) => {
             const siteAssets = assets.filter((a) => a.site === site);
             const compliant = siteAssets.filter((a) => a.compliance === "compliant").length;
-            const pct = Math.round((compliant / siteAssets.length) * 100);
+            const pct = siteAssets.length ? Math.round((compliant / siteAssets.length) * 100) : 0;
             return (
               <li key={site}>
                 <div className="mb-2 flex items-center justify-between text-sm">

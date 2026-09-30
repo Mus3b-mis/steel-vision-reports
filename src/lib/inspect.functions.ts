@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const InspectInput = z.object({
   imageDataUrl: z.string().min(32),
@@ -59,6 +60,7 @@ const schema = {
 } as const;
 
 export const analyzeAssetImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InspectInput.parse(input))
   .handler(async ({ data }): Promise<AiInspectionReport> => {
     const key = process.env["LOVABLE_API_KEY"];

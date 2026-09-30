@@ -1,4 +1,7 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { meQuery } from "@/lib/org-data";
 import {
   LayoutDashboard,
   Boxes,
@@ -7,15 +10,18 @@ import {
   ScanSearch,
   Bell,
   Search,
+  Users,
+  LogOut,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
 const nav = [
-  { to: "/", label: "لوحة المعلومات", icon: LayoutDashboard },
+  { to: "/dashboard", label: "لوحة المعلومات", icon: LayoutDashboard },
   { to: "/equipment", label: "سجل المعدات", icon: Boxes },
   { to: "/inspections", label: "سجل الفحوصات", icon: ClipboardList },
   { to: "/compliance", label: "حالة الامتثال", icon: ShieldCheck },
   { to: "/ai-inspection", label: "الفحص الذكي بالصور", icon: ScanSearch },
+  { to: "/team", label: "الفريق", icon: Users },
 ] as const;
 
 export function AppShell({
@@ -27,6 +33,16 @@ export function AppShell({
   subtitle?: string;
   children: ReactNode;
 }) {
+  const { data: me } = useQuery(meQuery);
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+  const roleLabel = me?.role === "owner" ? "مالك الحساب" : me?.role === "admin" ? "مشرف" : "عضو";
   return (
     <div className="min-h-screen lg:flex">
       <aside className="frost brushed sticky top-0 z-20 hidden w-64 shrink-0 flex-col gap-2 rounded-none border-y-0 border-s-0 p-5 lg:flex lg:h-screen">
@@ -36,7 +52,7 @@ export function AppShell({
             <Link
               key={item.to}
               to={item.to}
-              activeOptions={{ exact: item.to === "/" }}
+              activeOptions={{ exact: true }}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
               activeProps={{
                 className:
@@ -49,8 +65,8 @@ export function AppShell({
           ))}
         </nav>
         <div className="frost mt-auto rounded-xl p-4 text-xs leading-relaxed text-muted-foreground">
-          <p className="mb-1 font-semibold text-foreground">بيانات تجريبية</p>
-          هذه نسخة استعراضية بمحتوى نموذجي، والفحص الذكي بالصور يعمل فعليًا.
+          <p className="mb-1 font-semibold text-foreground">{me?.orgName || "شركتي"}</p>
+          البيانات مشتركة بين جميع أعضاء فريق شركتك.
         </div>
       </aside>
 
@@ -78,12 +94,20 @@ export function AppShell({
           </button>
           <div className="flex items-center gap-2.5">
             <div className="grid size-9 place-items-center rounded-full bg-primary/20 text-sm font-bold text-primary">
-              م
+              {(me?.fullName || "؟").trim().charAt(0)}
             </div>
             <div className="hidden text-xs leading-tight sm:block">
-              <div className="font-semibold">مصعب الشهري</div>
-              <div className="text-muted-foreground">مدير الفحص</div>
+              <div className="font-semibold">{me?.fullName}</div>
+              <div className="text-muted-foreground">{me?.jobTitle || roleLabel}</div>
             </div>
+            <button
+              onClick={signOut}
+              aria-label="تسجيل الخروج"
+              title="تسجيل الخروج"
+              className="grid size-9 place-items-center rounded-lg border border-input bg-secondary/40 text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="size-4" />
+            </button>
           </div>
         </header>
 
@@ -92,7 +116,7 @@ export function AppShell({
             <Link
               key={item.to}
               to={item.to}
-              activeOptions={{ exact: item.to === "/" }}
+              activeOptions={{ exact: true }}
               className="shrink-0 rounded-lg px-3 py-1.5 text-xs text-muted-foreground"
               activeProps={{ className: "bg-secondary/80 text-foreground font-semibold" }}
             >
