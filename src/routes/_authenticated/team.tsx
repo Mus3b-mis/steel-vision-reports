@@ -62,7 +62,7 @@ function TeamPage() {
       role,
       invited_by: me.userId,
     });
-    if (error) return toast.error(error.code === "23505" ? "هذا البريد مدعو مسبقًا" : "تعذّر إرسال الدعوة");
+    if (error) { toast.error(error.code === "23505" ? "هذا البريد مدعو مسبقًا" : "تعذّر إرسال الدعوة"); return; }
     toast.success("تمت إضافة الدعوة — اطلب من زميلك إنشاء حساب بنفس البريد");
     setEmail("");
     qc.invalidateQueries({ queryKey: ["team-invites"] });
@@ -74,7 +74,7 @@ function TeamPage() {
   }
   async function removeMember(userId: string) {
     const { error } = await supabase.from("organization_members").delete().eq("user_id", userId);
-    if (error) return toast.error("تعذّر إزالة العضو");
+    if (error) { toast.error("تعذّر إزالة العضو"); return; }
     qc.invalidateQueries({ queryKey: ["team-members"] });
   }
 

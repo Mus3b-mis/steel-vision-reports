@@ -25,7 +25,7 @@ function ResetPassword() {
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password: pw });
     setLoading(false);
-    if (error) return toast.error("تعذّر تحديث كلمة المرور، اطلب رابطًا جديدًا");
+    if (error) { toast.error("تعذّر تحديث كلمة المرور، اطلب رابطًا جديدًا"); return; }
     toast.success("تم تحديث كلمة المرور");
     navigate({ to: "/dashboard", replace: true });
   }

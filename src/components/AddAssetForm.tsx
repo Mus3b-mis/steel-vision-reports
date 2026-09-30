@@ -32,7 +32,7 @@ export function AddAssetForm() {
       created_by: me.userId,
     });
     setBusy(false);
-    if (error) return toast.error("تعذّر إضافة المعدة");
+    if (error) { toast.error("تعذّر إضافة المعدة"); return; }
     toast.success("تمت إضافة المعدة");
     setF({ name: "", category: "", site: "", serial: "", next: "" });
     setOpen(false);
