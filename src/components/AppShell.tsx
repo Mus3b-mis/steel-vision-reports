@@ -12,6 +12,7 @@ import {
   Search,
   Users,
   LogOut,
+  Crown,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -48,7 +49,7 @@ export function AppShell({
       <aside className="frost brushed sticky top-0 z-20 hidden w-64 shrink-0 flex-col gap-2 rounded-none border-y-0 border-s-0 p-5 lg:flex lg:h-screen">
         <Brand />
         <nav className="mt-6 flex flex-col gap-1">
-          {nav.map((item) => (
+          {[...nav, ...(me?.isSuperAdmin ? [{ to: "/admin", label: "إدارة المنصة", icon: Crown } as const] : [])].map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -112,7 +113,7 @@ export function AppShell({
         </header>
 
         <nav className="frost flex gap-1 overflow-x-auto rounded-none border-x-0 border-t-0 px-3 py-2 lg:hidden">
-          {nav.map((item) => (
+          {[...nav, ...(me?.isSuperAdmin ? [{ to: "/admin", label: "إدارة المنصة", icon: Crown } as const] : [])].map((item) => (
             <Link
               key={item.to}
               to={item.to}

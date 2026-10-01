@@ -70,6 +70,24 @@ export type Database = {
           },
         ]
       }
+      blocked_users: {
+        Row: {
+          blocked_at: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          blocked_at?: string
+          reason?: string
+          user_id: string
+        }
+        Update: {
+          blocked_at?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inspections: {
         Row: {
           asset_id: string | null
@@ -214,16 +232,31 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          notes: string
+          plan: string
+          status: string
+          subscription_ends_at: string | null
+          subscription_status: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          notes?: string
+          plan?: string
+          status?: string
+          subscription_ends_at?: string | null
+          subscription_status?: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          notes?: string
+          plan?: string
+          status?: string
+          subscription_ends_at?: string | null
+          subscription_status?: string
         }
         Relationships: []
       }
@@ -251,16 +284,92 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_list_orgs: {
+        Args: never
+        Returns: {
+          assets: number
+          created_at: string
+          id: string
+          inspections: number
+          members: number
+          name: string
+          notes: string
+          owner_email: string
+          plan: string
+          status: string
+          subscription_ends_at: string
+          subscription_status: string
+        }[]
+      }
+      admin_list_users: {
+        Args: never
+        Returns: {
+          blocked: boolean
+          created_at: string
+          email: string
+          full_name: string
+          is_super_admin: boolean
+          job_title: string
+          last_sign_in_at: string
+          organization_id: string
+          organization_name: string
+          role: string
+          user_id: string
+        }[]
+      }
+      admin_set_user_blocked: {
+        Args: { _blocked: boolean; _user: string }
+        Returns: undefined
+      }
+      admin_update_org: {
+        Args: {
+          _ends: string
+          _notes: string
+          _org: string
+          _plan: string
+          _status: string
+          _subscription_status: string
+        }
+        Returns: undefined
+      }
       ensure_account: { Args: never; Returns: string }
+      ensure_platform_admin: { Args: never; Returns: undefined }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_org_admin: { Args: never; Returns: boolean }
+      my_access_state: { Args: never; Returns: string }
       user_org_id: { Args: never; Returns: string }
     }
     Enums: {
+      app_role: "super_admin"
       org_role: "owner" | "admin" | "member"
     }
     CompositeTypes: {
@@ -389,6 +498,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["super_admin"],
       org_role: ["owner", "admin", "member"],
     },
   },
