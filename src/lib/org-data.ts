@@ -100,18 +100,20 @@ export type Me = {
   role: "owner" | "admin" | "member";
   orgId: string;
   orgName: string;
+  isSuperAdmin: boolean;
 };
 
 async function fetchMe(): Promise<Me> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("not signed in");
-  const [p, m] = await Promise.all([
+  const [p, m, r] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", u.user.id).maybeSingle(),
     supabase
       .from("organization_members")
       .select("role, organization_id, organizations(name)")
       .eq("user_id", u.user.id)
       .maybeSingle(),
+    supabase.rpc("has_role", { _user_id: u.user.id, _role: "super_admin" }),
   ]);
   const org = (m.data?.organizations as { name: string } | null) ?? null;
   return {
@@ -122,6 +124,7 @@ async function fetchMe(): Promise<Me> {
     role: (m.data?.role ?? "member") as Me["role"],
     orgId: m.data?.organization_id ?? "",
     orgName: org?.name ?? "",
+    isSuperAdmin: !!r.data,
   };
 }
 
