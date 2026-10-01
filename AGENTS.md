@@ -8,3 +8,9 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Architecture rules
+- App pages live under `src/routes/_authenticated/` (client-only gate that also calls the `ensure_account` RPC); `/`, `/auth`, `/reset-password` are public — keeps login state out of SSR.
+- All business data is scoped by `organization_id` with RLS via `user_org_id()` / `is_org_admin()` — gives team sharing without trusting the client.
+- Pages read data through `orgDataQuery` / `meQuery` in `src/lib/org-data.ts`, and stats/charts are computed from live rows there — one source of truth.
+- Compliance state is derived from `next_inspection` (overdue / within 30 days / compliant), not stored — avoids scheduled jobs.
