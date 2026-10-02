@@ -166,7 +166,7 @@ function AdminPage() {
                   <input
                     type="date"
                     defaultValue={x.subscription_ends_at ?? ""}
-                    onBlur={(e) => e.target.value !== (x.subscription_ends_at ?? "") && updateOrg(x, { subscription_ends_at: e.target.value || null })}
+                    onBlur={(e) => e.target.value !== (x.subscription_ends_at ?? "") && updateOrg(x, { subscription_ends_at: e.target.value })}
                     className={sel}
                   />
                 </label>
