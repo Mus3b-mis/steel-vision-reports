@@ -2,7 +2,16 @@ import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Asset, AssetStatus, ComplianceState, Inspection } from "@/lib/demo-data";
 
-export type OrgAsset = Asset & { uuid: string };
+export type OrgAsset = Asset & {
+  uuid: string;
+  assetType: "vehicle" | "equipment";
+  plate: string;
+  vin: string;
+  odometer: number | null;
+  make: string;
+  model: string;
+  year: number | null;
+};
 export type OrgInspection = Inspection & { uuid: string };
 
 const DAY = 86_400_000;
@@ -39,6 +48,13 @@ async function fetchOrgData() {
     lastInspection: r.last_inspection ?? "—",
     nextInspection: r.next_inspection ?? "—",
     healthScore: r.health_score,
+    assetType: r.asset_type === "equipment" ? "equipment" : "vehicle",
+    plate: r.plate_number,
+    vin: r.vin,
+    odometer: r.odometer,
+    make: r.make,
+    model: r.model,
+    year: r.year,
   }));
 
   const inspections: OrgInspection[] = i.data.map((r) => ({

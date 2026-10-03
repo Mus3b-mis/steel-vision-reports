@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       assets: {
         Row: {
+          asset_type: string
           category: string
           code: string
           created_at: string
@@ -23,14 +24,21 @@ export type Database = {
           health_score: number
           id: string
           last_inspection: string | null
+          make: string
+          model: string
           name: string
           next_inspection: string | null
+          odometer: number | null
           organization_id: string
+          plate_number: string
           serial: string
           site: string
           status: string
+          vin: string
+          year: number | null
         }
         Insert: {
+          asset_type?: string
           category?: string
           code?: string
           created_at?: string
@@ -38,14 +46,21 @@ export type Database = {
           health_score?: number
           id?: string
           last_inspection?: string | null
+          make?: string
+          model?: string
           name: string
           next_inspection?: string | null
+          odometer?: number | null
           organization_id: string
+          plate_number?: string
           serial?: string
           site?: string
           status?: string
+          vin?: string
+          year?: number | null
         }
         Update: {
+          asset_type?: string
           category?: string
           code?: string
           created_at?: string
@@ -53,12 +68,18 @@ export type Database = {
           health_score?: number
           id?: string
           last_inspection?: string | null
+          make?: string
+          model?: string
           name?: string
           next_inspection?: string | null
+          odometer?: number | null
           organization_id?: string
+          plate_number?: string
           serial?: string
           site?: string
           status?: string
+          vin?: string
+          year?: number | null
         }
         Relationships: [
           {
@@ -92,6 +113,7 @@ export type Database = {
         Row: {
           asset_id: string | null
           asset_name: string
+          checklist: Json | null
           code: string
           created_at: string
           created_by: string | null
@@ -101,6 +123,7 @@ export type Database = {
           id: string
           inspected_on: string
           inspector_name: string
+          odometer: number | null
           organization_id: string
           report: Json | null
           result: string
@@ -109,6 +132,7 @@ export type Database = {
         Insert: {
           asset_id?: string | null
           asset_name: string
+          checklist?: Json | null
           code?: string
           created_at?: string
           created_by?: string | null
@@ -118,6 +142,7 @@ export type Database = {
           id?: string
           inspected_on?: string
           inspector_name?: string
+          odometer?: number | null
           organization_id: string
           report?: Json | null
           result: string
@@ -126,6 +151,7 @@ export type Database = {
         Update: {
           asset_id?: string | null
           asset_name?: string
+          checklist?: Json | null
           code?: string
           created_at?: string
           created_by?: string | null
@@ -135,6 +161,7 @@ export type Database = {
           id?: string
           inspected_on?: string
           inspector_name?: string
+          odometer?: number | null
           organization_id?: string
           report?: Json | null
           result?: string
