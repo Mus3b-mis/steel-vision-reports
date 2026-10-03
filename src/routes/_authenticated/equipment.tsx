@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Car, Wrench } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
@@ -10,15 +11,15 @@ import { orgDataQuery } from "@/lib/org-data";
 export const Route = createFileRoute("/_authenticated/equipment")({
   head: () => ({
     meta: [
-      { title: "سجل المعدات | وثيق" },
+      { title: "سجل الأسطول والمعدات | وثيق" },
       {
         name: "description",
-        content: "سجل مركزي لكل الأصول والمعدات مع الموقع والحالة الفنية وتواريخ الفحص القادمة.",
+        content: "سجل مركزي للمركبات والمعدات: رقم اللوحة والهيكل والعداد والحالة الفنية وتواريخ الفحص.",
       },
-      { property: "og:title", content: "سجل المعدات | وثيق" },
+      { property: "og:title", content: "سجل الأسطول والمعدات | وثيق" },
       {
         property: "og:description",
-        content: "سجل مركزي لكل الأصول والمعدات مع الموقع والحالة الفنية وتواريخ الفحص القادمة.",
+        content: "سجل مركزي للمركبات والمعدات: رقم اللوحة والهيكل والعداد والحالة الفنية وتواريخ الفحص.",
       },
     ],
   }),
@@ -31,17 +32,19 @@ function EquipmentPage() {
   const [query, setQuery] = useState("");
   const [site, setSite] = useState("all");
   const [category, setCategory] = useState("all");
+  const [kind, setKind] = useState<"all" | "vehicle" | "equipment">("all");
 
   const rows = useMemo(
     () =>
       assets.filter(
         (a) =>
+          (kind === "all" || a.assetType === kind) &&
           (site === "all" || a.site === site) &&
           (category === "all" || a.category === category) &&
           (query.trim() === "" ||
-            `${a.name} ${a.id} ${a.serial}`.toLowerCase().includes(query.trim().toLowerCase())),
+            `${a.name} ${a.id} ${a.serial} ${a.plate} ${a.vin} ${a.make} ${a.model}`.toLowerCase().includes(query.trim().toLowerCase())),
       ),
-    [assets, query, site, category],
+    [assets, query, site, category, kind],
   );
 
   return (
@@ -95,9 +98,15 @@ function EquipmentPage() {
               className="grid gap-2 px-5 py-4 transition-colors hover:bg-secondary/30 md:grid-cols-12 md:items-center md:gap-3"
             >
               <div className="md:col-span-4">
-                <div className="text-sm font-semibold">{a.name}</div>
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  {a.assetType === "vehicle" ? <Car className="size-4 text-primary" /> : <Wrench className="size-4 text-muted-foreground" />}
+                  {a.name}
+                  {a.plate ? <span className="rounded-md border border-border bg-secondary/50 px-1.5 py-0.5 text-[11px]">{a.plate}</span> : null}
+                </div>
                 <div className="text-xs text-muted-foreground">
-                  {a.id} · {a.serial} · {a.category}
+                  {a.assetType === "vehicle"
+                    ? [a.id, [a.make, a.model, a.year].filter(Boolean).join(" "), a.vin && `VIN ${a.vin}`, a.odometer != null && `${a.odometer.toLocaleString("ar-SA")} كم`].filter(Boolean).join(" · ")
+                    : `${a.id} · ${a.serial} · ${a.category}`}
                 </div>
                 <div className="mt-2 flex items-center gap-2">
                   <div className="h-1.5 w-24 overflow-hidden rounded-full bg-secondary">
