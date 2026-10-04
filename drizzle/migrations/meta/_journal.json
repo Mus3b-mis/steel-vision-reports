@@ -8,6 +8,13 @@
       "when": 1791003017283,
       "tag": "0000_vehicle_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791072313863,
+      "tag": "0001_seed_sample_vehicles",
+      "breakpoints": true
     }
   ]
 }
