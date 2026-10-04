@@ -5,8 +5,15 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const InspectInput = z.object({
   imageDataUrl: z.string().min(32),
   assetName: z.string().optional(),
-  notes: z.string().optional(),
+  notes: z.string().max(1000).optional(),
+  isVehicle: z.boolean().optional(),
 });
+
+export const VEHICLE_AREAS = ["body", "tires", "brakes", "engine", "electrical", "fluids"] as const;
+export const AREA_LABELS: Record<(typeof VEHICLE_AREAS)[number], string> = {
+  body: "الهيكل والبودي", tires: "الإطارات", brakes: "الفرامل",
+  engine: "المحرك", electrical: "الكهرباء والإضاءة", fluids: "السوائل والزيوت",
+};
 
 export type AiInspectionReport = {
   assetGuess: string;
@@ -18,6 +25,7 @@ export type AiInspectionReport = {
   findings: { title: string; detail: string; severity: "low" | "medium" | "high" }[];
   recommendations: string[];
   suggestedResult: "pass" | "conditional" | "fail";
+  checklist: { area: (typeof VEHICLE_AREAS)[number]; status: "ok" | "attention" | "fail" | "not_visible"; note: string }[];
 };
 
 const schema = {
@@ -33,6 +41,7 @@ const schema = {
     "findings",
     "recommendations",
     "suggestedResult",
+    "checklist",
   ],
   properties: {
     assetGuess: { type: "string" },
@@ -56,6 +65,19 @@ const schema = {
     },
     recommendations: { type: "array", items: { type: "string" } },
     suggestedResult: { type: "string", enum: ["pass", "conditional", "fail"] },
+    checklist: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["area", "status", "note"],
+        properties: {
+          area: { type: "string", enum: [...VEHICLE_AREAS] },
+          status: { type: "string", enum: ["ok", "attention", "fail", "not_visible"] },
+          note: { type: "string" },
+        },
+      },
+    },
   },
 } as const;
 
@@ -78,7 +100,7 @@ export const analyzeAssetImage = createServerFn({ method: "POST" })
         stream: true,
         reasoning: { effort: "low", summary: "auto" },
         instructions:
-          "أنت مفتش أصول ومعدات صناعية معتمد. حلّل صورة الأصل وحدد حالته الفنية والمخاطر. اكتب كل النصوص باللغة العربية الفصحى المهنية. كن محافظًا: إذا كانت الصورة غير واضحة اذكر ذلك في الملخص واخفض درجة الثقة في التقييم. healthScore رقم من 0 إلى 100.",
+          "أنت مفتش مركبات وأساطيل معتمد (وتفحص المعدات الثقيلة أيضًا). للمركبات املأ checklist بستة بنود بالضبط: body, tires, brakes, engine, electrical, fluids، واستخدم not_visible لما لا يظهر في الصورة. للمعدات الثقيلة أعد checklist فارغة. حلّل صورة الأصل وحدد حالته الفنية والمخاطر. اكتب كل النصوص باللغة العربية الفصحى المهنية. كن محافظًا: إذا كانت الصورة غير واضحة اذكر ذلك في الملخص واخفض درجة الثقة في التقييم. healthScore رقم من 0 إلى 100.",
         input: [
           {
             role: "user",
@@ -87,7 +109,7 @@ export const analyzeAssetImage = createServerFn({ method: "POST" })
                 type: "input_text",
                 text: `حلّل حالة هذا الأصل وأعد تقرير فحص منظم بصيغة json.${
                   data.assetName ? `\nاسم الأصل المعلن: ${data.assetName}` : ""
-                }${data.notes ? `\nملاحظات المفتش: ${data.notes}` : ""}`,
+                }${data.isVehicle === false ? "\nنوع الأصل: معدة ثقيلة" : "\nنوع الأصل: مركبة"}${data.notes ? `\nملاحظات المفتش: ${data.notes}` : ""}`,
               },
               { type: "input_image", image_url: data.imageDataUrl },
             ],
