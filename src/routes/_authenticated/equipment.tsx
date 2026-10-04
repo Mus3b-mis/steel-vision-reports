@@ -48,8 +48,13 @@ function EquipmentPage() {
   );
 
   return (
-    <AppShell title="سجل المعدات" subtitle="جميع الأصول المسجلة في المنصة مع حالتها التشغيلية.">
+    <AppShell title="سجل الأسطول والمعدات" subtitle="المركبات أولًا، مع المعدات الثقيلة كفئة اختيارية.">
       <AddAssetForm />
+      <div className="flex gap-2">
+        {([["all", "الكل"], ["vehicle", "المركبات"], ["equipment", "المعدات الثقيلة"]] as const).map(([k, l]) => (
+          <button key={k} onClick={() => setKind(k)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${kind === k ? "bg-primary text-primary-foreground" : "bg-secondary/40 text-muted-foreground"}`}>{l}</button>
+        ))}
+      </div>
       <div className="frost flex flex-wrap gap-3 rounded-2xl p-4">
         <input
           value={query}
