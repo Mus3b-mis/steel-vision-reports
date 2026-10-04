@@ -9,7 +9,7 @@ import { SeverityBadge, ResultBadge, AssetStatusBadge } from "@/components/Statu
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery, orgDataQuery } from "@/lib/org-data";
-import { analyzeAssetImage, type AiInspectionReport } from "@/lib/inspect.functions";
+import { analyzeAssetImage, AREA_LABELS, type AiInspectionReport } from "@/lib/inspect.functions";
 
 export const Route = createFileRoute("/_authenticated/ai-inspection")({
   head: () => ({
@@ -36,6 +36,7 @@ function AiInspectionPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [assetName, setAssetName] = useState("");
   const [notes, setNotes] = useState("");
+  const [odometer, setOdometer] = useState("");
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<AiInspectionReport | null>(null);
   const [saved, setSaved] = useState(false);
@@ -44,12 +45,15 @@ function AiInspectionPage() {
   const { data: me } = useQuery(meQuery);
   const queryClient = useQueryClient();
   const assets = org?.assets ?? [];
+  const matched = assets.find((a) => a.name === assetName.trim() || (a.plate && a.plate === assetName.trim()));
+  const isVehicle = matched ? matched.assetType === "vehicle" : true;
+  const odo = odometer ? Math.max(0, Math.round(Number(odometer))) : null;
 
   async function approve() {
     if (!report || !me) return;
     setSaving(true);
     try {
-      const match = assets.find((a) => a.name === assetName.trim());
+      const match = matched;
       const today = new Date().toISOString().slice(0, 10);
       const findingsText = [report.summary, ...report.findings.map((f) => `${f.title}: ${f.detail}`)].join("\n");
       const { error } = await supabase.from("inspections").insert({
@@ -63,6 +67,8 @@ function AiInspectionPage() {
         source: "ai",
         health_score: Math.round(report.healthScore),
         report: report as never,
+        checklist: (report.checklist?.length ? report.checklist : null) as never,
+        odometer: odo,
         created_by: me.userId,
       });
       if (error) throw error;
@@ -75,6 +81,7 @@ function AiInspectionPage() {
             next_inspection: next,
             health_score: Math.max(0, Math.min(100, Math.round(report.healthScore))),
             status: report.condition,
+            ...(odo !== null ? { odometer: odo } : {}),
           })
           .eq("id", match.uuid);
         if (e2) throw e2;
@@ -118,6 +125,7 @@ function AiInspectionPage() {
         data: {
           imageDataUrl: preview,
           assetName: assetName || undefined,
+          isVehicle,
           notes: notes || undefined,
         },
       });
@@ -183,20 +191,33 @@ function AiInspectionPage() {
 
           <div className="mt-5 space-y-3">
             <label className="block text-xs text-muted-foreground">
-              اسم الأصل (اختر من سجل المعدات لربط التقرير بها)
+              المركبة أو المعدة (اختر من السجل لربط التقرير بها)
               <input
                 value={assetName}
                 onChange={(e) => setAssetName(e.target.value)}
                 list="asset-names"
-                placeholder="مثال: ضاغط هواء صناعي 75 كيلوواط"
+                placeholder="مثال: تويوتا هايلكس 2022"
                 className="mt-1.5 h-10 w-full rounded-lg border border-input bg-secondary/40 px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
               />
             </label>
             <datalist id="asset-names">
               {assets.map((a) => (
-                <option key={a.id} value={a.name} />
+                <option key={a.id} value={a.name}>{a.plate}</option>
               ))}
             </datalist>
+            {isVehicle ? (
+              <label className="block text-xs text-muted-foreground">
+                قراءة العداد الحالية (كم)
+                <input
+                  type="number"
+                  min={0}
+                  value={odometer}
+                  onChange={(e) => setOdometer(e.target.value)}
+                  placeholder={matched?.odometer != null ? `آخر قراءة ${matched.odometer}` : "مثال: 84500"}
+                  className="mt-1.5 h-10 w-full rounded-lg border border-input bg-secondary/40 px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                />
+              </label>
+            ) : null}
             <label className="block text-xs text-muted-foreground">
               ملاحظات المفتش (اختياري)
               <textarea
@@ -255,6 +276,29 @@ function AiInspectionPage() {
                   {report.summary}
                 </p>
               </div>
+
+              {report.checklist?.length ? (
+                <div>
+                  <h3 className="text-sm font-bold">قائمة فحص المركبة</h3>
+                  <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {report.checklist.map((c) => (
+                      <li key={c.area} className="rounded-xl border border-border bg-secondary/25 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-semibold">{AREA_LABELS[c.area] ?? c.area}</span>
+                          <span className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${
+                            c.status === "ok" ? "bg-success/15 text-success"
+                            : c.status === "attention" ? "bg-warning/15 text-warning"
+                            : c.status === "fail" ? "bg-destructive/15 text-destructive"
+                            : "bg-secondary text-muted-foreground"}`}>
+                            {{ ok: "سليم", attention: "يحتاج متابعة", fail: "غير صالح", not_visible: "غير ظاهر" }[c.status]}
+                          </span>
+                        </div>
+                        {c.note ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{c.note}</p> : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
 
               {report.findings.length ? (
                 <div>
