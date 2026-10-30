@@ -16,3 +16,4 @@
 - Compliance state is derived from `next_inspection` (overdue / within 30 days / compliant), not stored — avoids scheduled jobs.
 - Platform super admin is a `super_admin` row in `user_roles`, granted by `ensure_platform_admin()` to the owner's email; all `/admin` reads/writes go through `admin_*` security-definer RPCs that check `has_role` — company admins can never change status/plan.
 - Blocking is enforced in `user_org_id()` (blocked user or blocked company ⇒ no data) plus a blocked screen in the `_authenticated` gate.
+- Inspection photos live in the private `inspection-photos` bucket at `<organization_id>/<inspection_id>/<n>.jpg` (storage RLS checks the first folder against `user_org_id()`); paths are stored in `inspections.photos` and shown via signed URLs — keeps photos company-private. Photos are downscaled in the browser before analysis so many photos fit one request.
