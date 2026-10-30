@@ -71,7 +71,7 @@ function AiInspectionPage() {
         const path = `${me.orgId}/${inspectionId}/${i + 1}.jpg`;
         const { error: upErr } = await supabase.storage
           .from("inspection-photos")
-          .upload(path, dataUrlToBlob(photos[i]), { contentType: "image/jpeg", upsert: true });
+          .upload(path, dataUrlToBlob(photos[i] ?? ""), { contentType: "image/jpeg", upsert: true });
         if (upErr) throw upErr;
         paths.push(path);
       }

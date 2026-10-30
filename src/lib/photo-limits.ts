@@ -28,7 +28,7 @@ export async function compressPhoto(file: File, maxSide = 1600, quality = 0.82):
 }
 
 export function dataUrlToBlob(dataUrl: string): Blob {
-  const [head, b64] = dataUrl.split(",");
+  const [head = "", b64 = ""] = dataUrl.split(",");
   const mime = /data:([^;]+)/.exec(head)?.[1] ?? "image/jpeg";
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
