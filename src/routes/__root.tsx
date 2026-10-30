@@ -124,8 +124,19 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
+    // Mobile browsers re-emit SIGNED_IN whenever the tab becomes visible again
+    // (e.g. after returning from the camera). Only react when the user actually
+    // changes, otherwise the page reloads its data and in-progress work is lost.
+    let currentUserId: string | null | undefined;
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      const nextId = session?.user?.id ?? null;
+      if (event === "INITIAL_SESSION") {
+        currentUserId = nextId;
+        return;
+      }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      if (event === "SIGNED_IN" && nextId === currentUserId) return;
+      currentUserId = nextId;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Sparkles, Camera, X, CheckCircle2, Plus } from "lucide-react";
-import { useRef, useState } from "react";
+import { Loader2, Sparkles, Camera, X, CheckCircle2, Plus, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
@@ -17,6 +17,7 @@ import {
   dataUrlToBlob,
   remainingPhotoSlots,
 } from "@/lib/photo-limits";
+import { clearDraft, loadDraft, saveDraft } from "@/lib/inspection-draft";
 
 export const Route = createFileRoute("/_authenticated/ai-inspection")({
   head: () => ({
@@ -57,6 +58,46 @@ function AiInspectionPage() {
   const isVehicle = matched ? matched.assetType === "vehicle" : true;
   const odo = odometer ? Math.max(0, Math.round(Number(odometer))) : null;
   const slotsLeft = remainingPhotoSlots(photos.length);
+  const userId = me?.userId;
+  const [draftReady, setDraftReady] = useState(false);
+
+  // Restore the in-progress inspection if the phone reloaded the page while the camera was open.
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    loadDraft(userId).then((draft) => {
+      if (cancelled) return;
+      if (draft && (draft.photos.length || draft.assetName || draft.notes || draft.odometer)) {
+        setPhotos(draft.photos.slice(0, MAX_INSPECTION_PHOTOS));
+        setAssetName(draft.assetName ?? "");
+        setNotes(draft.notes ?? "");
+        setOdometer(draft.odometer ?? "");
+        setReport((draft.report as AiInspectionReport | null) ?? null);
+        if (draft.photos.length) toast.success(`تم استرجاع ${draft.photos.length} صورة من الفحص الجاري`);
+      }
+      setDraftReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  // Save every change on the device right away.
+  useEffect(() => {
+    if (!userId || !draftReady || saved) return;
+    void saveDraft(userId, { photos, assetName, notes, odometer, report });
+  }, [userId, draftReady, saved, photos, assetName, notes, odometer, report]);
+
+  async function startNew() {
+    if (photos.length && !saved && !window.confirm("سيتم حذف الصور والبيانات الحالية. متابعة؟")) return;
+    setPhotos([]);
+    setAssetName("");
+    setNotes("");
+    setOdometer("");
+    setReport(null);
+    setSaved(false);
+    if (userId) await clearDraft(userId);
+  }
 
   async function approve() {
     if (!report || !me) return;
@@ -109,6 +150,7 @@ function AiInspectionPage() {
       }
       await queryClient.invalidateQueries({ queryKey: ["org-data"] });
       setSaved(true);
+      await clearDraft(me.userId);
       toast.success(match ? "تم اعتماد التقرير وتحديث حالة المعدة" : "تم اعتماد التقرير وإضافته لسجل الفحوصات");
     } catch (err) {
       console.error(err);
@@ -130,11 +172,14 @@ function AiInspectionPage() {
     const batch = images.slice(0, room);
     if (images.length > room) toast.error(`تمت إضافة ${room} فقط — الحد الأقصى ${MAX_INSPECTION_PHOTOS} صورة`);
     setProcessing(true);
+    setReport(null);
+    setSaved(false);
     try {
-      const urls = await Promise.all(batch.map((f) => compressPhoto(f)));
-      setPhotos((prev) => [...prev, ...urls].slice(0, MAX_INSPECTION_PHOTOS));
-      setReport(null);
-      setSaved(false);
+      // One photo at a time keeps memory low on phones.
+      for (const f of batch) {
+        const url = await compressPhoto(f);
+        setPhotos((prev) => [...prev, url].slice(0, MAX_INSPECTION_PHOTOS));
+      }
     } catch (err) {
       console.error(err);
       toast.error("تعذّرت قراءة الصورة، حاول مرة أخرى");
@@ -258,6 +303,20 @@ function AiInspectionPage() {
           )}
           {slotsLeft === 0 ? (
             <p className="mt-2 text-xs text-warning">وصلت للحد الأقصى ({MAX_INSPECTION_PHOTOS} صورة).</p>
+          ) : null}
+          {photos.length ? (
+            <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+              <span>الصور محفوظة على جهازك حتى تعتمد التقرير.</span>
+              <button
+                type="button"
+                onClick={startNew}
+                disabled={loading || saving || processing}
+                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-input bg-secondary/40 px-2 py-1 font-medium text-foreground hover:bg-secondary disabled:opacity-50"
+              >
+                <RotateCcw className="size-3" />
+                فحص جديد
+              </button>
+            </div>
           ) : null}
 
           <div className="mt-5 space-y-3">
