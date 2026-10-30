@@ -1,9 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { MAX_INSPECTION_PHOTOS, MIN_INSPECTION_PHOTOS } from "@/lib/photo-limits";
 
 const InspectInput = z.object({
-  imageDataUrl: z.string().min(32),
+  imageDataUrls: z
+    .array(z.string().min(32).startsWith("data:image/"))
+    .min(MIN_INSPECTION_PHOTOS)
+    .max(MAX_INSPECTION_PHOTOS),
   assetName: z.string().optional(),
   notes: z.string().max(1000).optional(),
   isVehicle: z.boolean().optional(),
