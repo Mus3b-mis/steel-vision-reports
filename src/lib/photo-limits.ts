@@ -11,20 +11,50 @@ export function canAnalyzePhotos(count: number) {
   return count >= MIN_INSPECTION_PHOTOS && count <= MAX_INSPECTION_PHOTOS;
 }
 
-/** Downscale a camera photo to a JPEG data URL so 20 photos stay small enough to send. */
-export async function compressPhoto(file: File, maxSide = 1600, quality = 0.82): Promise<string> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("canvas unavailable");
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close();
-  return canvas.toDataURL("image/jpeg", quality);
+/** Longest side of a stored inspection photo, in pixels. */
+export const PHOTO_MAX_SIDE = 1280;
+
+/** Size that fits inside maxSide while keeping the aspect ratio (never upscales). */
+export function fitWithin(width: number, height: number, maxSide = PHOTO_MAX_SIDE) {
+  const scale = Math.min(1, maxSide / Math.max(width, height, 1));
+  return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
+}
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("image decode failed"));
+    img.src = url;
+  });
+}
+
+/**
+ * Downscale a camera photo to a small JPEG data URL. Uses an <img> element
+ * (works on both iOS Safari and Android Chrome/Samsung Internet, respects photo
+ * rotation) and frees memory right away so large phone photos don't crash the tab.
+ */
+export async function compressPhoto(file: File, maxSide = PHOTO_MAX_SIDE, quality = 0.8): Promise<string> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(url);
+    const { width, height } = fitWithin(img.naturalWidth, img.naturalHeight, maxSide);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("canvas unavailable");
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(img, 0, 0, width, height);
+    const out = canvas.toDataURL("image/jpeg", quality);
+    canvas.width = 0;
+    canvas.height = 0;
+    img.src = "";
+    return out;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 export function dataUrlToBlob(dataUrl: string): Blob {
