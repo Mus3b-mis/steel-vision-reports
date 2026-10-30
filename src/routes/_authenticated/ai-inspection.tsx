@@ -33,7 +33,8 @@ export const Route = createFileRoute("/_authenticated/ai-inspection")({
 function AiInspectionPage() {
   const analyze = useServerFn(analyzeAssetImage);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [processing, setProcessing] = useState(false);
   const [assetName, setAssetName] = useState("");
   const [notes, setNotes] = useState("");
   const [odometer, setOdometer] = useState("");
@@ -48,6 +49,7 @@ function AiInspectionPage() {
   const matched = assets.find((a) => a.name === assetName.trim() || (a.plate && a.plate === assetName.trim()));
   const isVehicle = matched ? matched.assetType === "vehicle" : true;
   const odo = odometer ? Math.max(0, Math.round(Number(odometer))) : null;
+  const slotsLeft = remainingPhotoSlots(photos.length);
 
   async function approve() {
     if (!report || !me) return;
@@ -56,7 +58,18 @@ function AiInspectionPage() {
       const match = matched;
       const today = new Date().toISOString().slice(0, 10);
       const findingsText = [report.summary, ...report.findings.map((f) => `${f.title}: ${f.detail}`)].join("\n");
+      const inspectionId = crypto.randomUUID();
+      const paths: string[] = [];
+      for (let i = 0; i < photos.length; i++) {
+        const path = `${me.orgId}/${inspectionId}/${i + 1}.jpg`;
+        const { error: upErr } = await supabase.storage
+          .from("inspection-photos")
+          .upload(path, dataUrlToBlob(photos[i]), { contentType: "image/jpeg", upsert: true });
+        if (upErr) throw upErr;
+        paths.push(path);
+      }
       const { error } = await supabase.from("inspections").insert({
+        id: inspectionId,
         organization_id: me.orgId,
         asset_id: match?.uuid ?? null,
         asset_name: match?.name ?? (assetName.trim() || report.assetGuess),
@@ -69,6 +82,7 @@ function AiInspectionPage() {
         report: report as never,
         checklist: (report.checklist?.length ? report.checklist : null) as never,
         odometer: odo,
+        photos: paths,
         created_by: me.userId,
       });
       if (error) throw error;
@@ -97,43 +111,58 @@ function AiInspectionPage() {
     }
   }
 
-  async function pickFile(file: File | undefined) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("الرجاء اختيار ملف صورة");
+  async function pickFiles(files: File[]) {
+    if (!files.length) return;
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    if (images.length !== files.length) toast.error("الرجاء التقاط صور فقط");
+    const room = remainingPhotoSlots(photos.length);
+    if (room === 0) {
+      toast.error(`وصلت للحد الأقصى ${MAX_INSPECTION_PHOTOS} صورة`);
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error("حجم الصورة كبير، الحد الأقصى 8 ميجابايت");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPreview(String(reader.result));
+    const batch = images.slice(0, room);
+    if (images.length > room) toast.error(`تمت إضافة ${room} فقط — الحد الأقصى ${MAX_INSPECTION_PHOTOS} صورة`);
+    setProcessing(true);
+    try {
+      const urls = await Promise.all(batch.map((f) => compressPhoto(f)));
+      setPhotos((prev) => [...prev, ...urls].slice(0, MAX_INSPECTION_PHOTOS));
       setReport(null);
       setSaved(false);
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error(err);
+      toast.error("تعذّرت قراءة الصورة، حاول مرة أخرى");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  function removePhoto(index: number) {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+    setReport(null);
+    setSaved(false);
   }
 
   async function runAnalysis() {
-    if (!preview) return;
+    if (!canAnalyzePhotos(photos.length)) {
+      toast.error("التقط صورة واحدة على الأقل");
+      return;
+    }
     setLoading(true);
     setSaved(false);
     try {
       const result = await analyze({
         data: {
-          imageDataUrl: preview,
+          imageDataUrls: photos,
           assetName: assetName || undefined,
           isVehicle,
           notes: notes || undefined,
         },
       });
       setReport(result);
-      toast.success("تم تحليل الصورة وتجهيز التقرير");
+      toast.success("تم تحليل الصور وتجهيز التقرير");
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "تعذّر تحليل الصورة، حاول مرة أخرى");
+      toast.error(error instanceof Error ? error.message : "تعذّر تحليل الصور، حاول مرة أخرى");
     } finally {
       setLoading(false);
     }
