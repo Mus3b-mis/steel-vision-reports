@@ -125,6 +125,7 @@ export type Database = {
           inspector_name: string
           odometer: number | null
           organization_id: string
+          photos: string[]
           report: Json | null
           result: string
           source: string
@@ -144,6 +145,7 @@ export type Database = {
           inspector_name?: string
           odometer?: number | null
           organization_id: string
+          photos?: string[]
           report?: Json | null
           result: string
           source?: string
@@ -163,6 +165,7 @@ export type Database = {
           inspector_name?: string
           odometer?: number | null
           organization_id?: string
+          photos?: string[]
           report?: Json | null
           result?: string
           source?: string

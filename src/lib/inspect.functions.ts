@@ -1,9 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { MAX_INSPECTION_PHOTOS, MIN_INSPECTION_PHOTOS } from "@/lib/photo-limits";
 
 const InspectInput = z.object({
-  imageDataUrl: z.string().min(32),
+  imageDataUrls: z
+    .array(z.string().min(32).startsWith("data:image/"))
+    .min(MIN_INSPECTION_PHOTOS)
+    .max(MAX_INSPECTION_PHOTOS),
   assetName: z.string().optional(),
   notes: z.string().max(1000).optional(),
   isVehicle: z.boolean().optional(),
@@ -100,18 +104,21 @@ export const analyzeAssetImage = createServerFn({ method: "POST" })
         stream: true,
         reasoning: { effort: "low", summary: "auto" },
         instructions:
-          "أنت مفتش مركبات وأساطيل معتمد (وتفحص المعدات الثقيلة أيضًا). للمركبات املأ checklist بستة بنود بالضبط: body, tires, brakes, engine, electrical, fluids، واستخدم not_visible لما لا يظهر في الصورة. للمعدات الثقيلة أعد checklist فارغة. حلّل صورة الأصل وحدد حالته الفنية والمخاطر. اكتب كل النصوص باللغة العربية الفصحى المهنية. كن محافظًا: إذا كانت الصورة غير واضحة اذكر ذلك في الملخص واخفض درجة الثقة في التقييم. healthScore رقم من 0 إلى 100.",
+          "أنت مفتش مركبات وأساطيل معتمد (وتفحص المعدات الثقيلة أيضًا). قد تصلك عدة صور لنفس الأصل من زوايا مختلفة (الهيكل، الإطارات، المحرك، العداد، الأضرار...)؛ ادمج ما تراه في كل الصور في تقرير واحد موحد، واذكر رقم الصورة في الملاحظة عند الإشارة إلى عيب محدد (مثل: صورة 3). للمركبات املأ checklist بستة بنود بالضبط: body, tires, brakes, engine, electrical, fluids، واستخدم not_visible لما لا يظهر في أي صورة. للمعدات الثقيلة أعد checklist فارغة. حدد الحالة الفنية والمخاطر. اكتب كل النصوص باللغة العربية الفصحى المهنية. كن محافظًا: إذا كانت الصور غير واضحة اذكر ذلك في الملخص واخفض درجة الثقة في التقييم. healthScore رقم من 0 إلى 100.",
         input: [
           {
             role: "user",
             content: [
               {
                 type: "input_text",
-                text: `حلّل حالة هذا الأصل وأعد تقرير فحص منظم بصيغة json.${
+                text: `حلّل حالة هذا الأصل من ${data.imageDataUrls.length} صورة وأعد تقرير فحص منظم بصيغة json.${
                   data.assetName ? `\nاسم الأصل المعلن: ${data.assetName}` : ""
                 }${data.isVehicle === false ? "\nنوع الأصل: معدة ثقيلة" : "\nنوع الأصل: مركبة"}${data.notes ? `\nملاحظات المفتش: ${data.notes}` : ""}`,
               },
-              { type: "input_image", image_url: data.imageDataUrl },
+              ...data.imageDataUrls.flatMap((url, i) => [
+                { type: "input_text", text: `صورة ${i + 1}:` },
+                { type: "input_image", image_url: url },
+              ]),
             ],
           },
         ],

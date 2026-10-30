@@ -15,6 +15,13 @@
       "when": 1791072313863,
       "tag": "0001_seed_sample_vehicles",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793369612222,
+      "tag": "0002_inspection_photos",
+      "breakpoints": true
     }
   ]
 }

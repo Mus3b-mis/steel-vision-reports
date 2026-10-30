@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Sparkles, Camera, X, CheckCircle2 } from "lucide-react";
+import { Loader2, Sparkles, Camera, X, CheckCircle2, Plus } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -10,6 +10,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery, orgDataQuery } from "@/lib/org-data";
 import { analyzeAssetImage, AREA_LABELS, type AiInspectionReport } from "@/lib/inspect.functions";
+import {
+  MAX_INSPECTION_PHOTOS,
+  canAnalyzePhotos,
+  compressPhoto,
+  dataUrlToBlob,
+  remainingPhotoSlots,
+} from "@/lib/photo-limits";
 
 export const Route = createFileRoute("/_authenticated/ai-inspection")({
   head: () => ({
@@ -33,7 +40,8 @@ export const Route = createFileRoute("/_authenticated/ai-inspection")({
 function AiInspectionPage() {
   const analyze = useServerFn(analyzeAssetImage);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [processing, setProcessing] = useState(false);
   const [assetName, setAssetName] = useState("");
   const [notes, setNotes] = useState("");
   const [odometer, setOdometer] = useState("");
@@ -48,6 +56,7 @@ function AiInspectionPage() {
   const matched = assets.find((a) => a.name === assetName.trim() || (a.plate && a.plate === assetName.trim()));
   const isVehicle = matched ? matched.assetType === "vehicle" : true;
   const odo = odometer ? Math.max(0, Math.round(Number(odometer))) : null;
+  const slotsLeft = remainingPhotoSlots(photos.length);
 
   async function approve() {
     if (!report || !me) return;
@@ -56,7 +65,18 @@ function AiInspectionPage() {
       const match = matched;
       const today = new Date().toISOString().slice(0, 10);
       const findingsText = [report.summary, ...report.findings.map((f) => `${f.title}: ${f.detail}`)].join("\n");
+      const inspectionId = crypto.randomUUID();
+      const paths: string[] = [];
+      for (let i = 0; i < photos.length; i++) {
+        const path = `${me.orgId}/${inspectionId}/${i + 1}.jpg`;
+        const { error: upErr } = await supabase.storage
+          .from("inspection-photos")
+          .upload(path, dataUrlToBlob(photos[i] ?? ""), { contentType: "image/jpeg", upsert: true });
+        if (upErr) throw upErr;
+        paths.push(path);
+      }
       const { error } = await supabase.from("inspections").insert({
+        id: inspectionId,
         organization_id: me.orgId,
         asset_id: match?.uuid ?? null,
         asset_name: match?.name ?? (assetName.trim() || report.assetGuess),
@@ -69,6 +89,7 @@ function AiInspectionPage() {
         report: report as never,
         checklist: (report.checklist?.length ? report.checklist : null) as never,
         odometer: odo,
+        photos: paths,
         created_by: me.userId,
       });
       if (error) throw error;
@@ -97,43 +118,58 @@ function AiInspectionPage() {
     }
   }
 
-  async function pickFile(file: File | undefined) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("الرجاء اختيار ملف صورة");
+  async function pickFiles(files: File[]) {
+    if (!files.length) return;
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    if (images.length !== files.length) toast.error("الرجاء التقاط صور فقط");
+    const room = remainingPhotoSlots(photos.length);
+    if (room === 0) {
+      toast.error(`وصلت للحد الأقصى ${MAX_INSPECTION_PHOTOS} صورة`);
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error("حجم الصورة كبير، الحد الأقصى 8 ميجابايت");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPreview(String(reader.result));
+    const batch = images.slice(0, room);
+    if (images.length > room) toast.error(`تمت إضافة ${room} فقط — الحد الأقصى ${MAX_INSPECTION_PHOTOS} صورة`);
+    setProcessing(true);
+    try {
+      const urls = await Promise.all(batch.map((f) => compressPhoto(f)));
+      setPhotos((prev) => [...prev, ...urls].slice(0, MAX_INSPECTION_PHOTOS));
       setReport(null);
       setSaved(false);
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error(err);
+      toast.error("تعذّرت قراءة الصورة، حاول مرة أخرى");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  function removePhoto(index: number) {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+    setReport(null);
+    setSaved(false);
   }
 
   async function runAnalysis() {
-    if (!preview) return;
+    if (!canAnalyzePhotos(photos.length)) {
+      toast.error("التقط صورة واحدة على الأقل");
+      return;
+    }
     setLoading(true);
     setSaved(false);
     try {
       const result = await analyze({
         data: {
-          imageDataUrl: preview,
+          imageDataUrls: photos,
           assetName: assetName || undefined,
           isVehicle,
           notes: notes || undefined,
         },
       });
       setReport(result);
-      toast.success("تم تحليل الصورة وتجهيز التقرير");
+      toast.success("تم تحليل الصور وتجهيز التقرير");
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "تعذّر تحليل الصورة، حاول مرة أخرى");
+      toast.error(error instanceof Error ? error.message : "تعذّر تحليل الصور، حاول مرة أخرى");
     } finally {
       setLoading(false);
     }
@@ -142,11 +178,23 @@ function AiInspectionPage() {
   return (
     <AppShell
       title="الفحص الذكي بالصور"
-      subtitle="ارفع صورة واضحة للأصل، وسيحدد الذكاء الاصطناعي الحالة والمخاطر ويملأ تقرير الفحص."
+      subtitle="التقط من صورة واحدة حتى 20 صورة للأصل، وسيحدد الذكاء الاصطناعي الحالة والمخاطر ويملأ تقرير الفحص."
     >
       <div className="grid gap-4 lg:grid-cols-5">
         <section className="frost rounded-2xl p-5 lg:col-span-2">
-          <h2 className="text-base font-bold">1 · صورة الأصل</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-base font-bold">1 · صور الأصل</h2>
+            <span
+              className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
+                photos.length ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"
+              }`}
+            >
+              {photos.length} / {MAX_INSPECTION_PHOTOS}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            صورة واحدة إلزامية، ويمكنك إضافة حتى {MAX_INSPECTION_PHOTOS} صورة من زوايا مختلفة (الهيكل، الإطارات، المحرك، العداد، الأضرار).
+          </p>
 
           <input
             ref={inputRef}
@@ -155,39 +203,62 @@ function AiInspectionPage() {
             capture="environment"
             className="hidden"
             onChange={(e) => {
-              const file = e.target.files?.[0];
+              const files = Array.from(e.target.files ?? []);
               e.target.value = "";
-              pickFile(file);
+              pickFiles(files);
             }}
           />
 
-          {preview ? (
-            <div className="relative mt-4 overflow-hidden rounded-xl border border-border">
-              <img src={preview} alt="صورة الأصل المرفوعة" className="max-h-72 w-full object-cover" />
-              <button
-                onClick={() => {
-                  setPreview(null);
-                  setReport(null);
-                }}
-                aria-label="إزالة الصورة"
-                className="absolute end-2 top-2 grid size-8 place-items-center rounded-lg border border-border bg-popover/80 text-foreground backdrop-blur"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
+          {photos.length ? (
+            <ul className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {photos.map((src, i) => (
+                <li key={i} className="relative aspect-square overflow-hidden rounded-lg border border-border">
+                  <img src={src} alt={`صورة الأصل ${i + 1}`} className="size-full object-cover" />
+                  <span className="absolute start-1 top-1 rounded bg-popover/80 px-1.5 text-[10px] font-semibold text-foreground backdrop-blur">
+                    {i + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(i)}
+                    aria-label={`إزالة الصورة ${i + 1}`}
+                    className="absolute end-1 top-1 grid size-6 place-items-center rounded-md border border-border bg-popover/80 text-foreground backdrop-blur"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </li>
+              ))}
+              {slotsLeft > 0 ? (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    disabled={processing || loading}
+                    aria-label="التقاط صورة إضافية"
+                    className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-input bg-secondary/25 text-primary transition-colors hover:border-primary/50 hover:bg-secondary/40 disabled:opacity-50"
+                  >
+                    {processing ? <Loader2 className="size-5 animate-spin" /> : <Plus className="size-5" />}
+                    <span className="text-[10px] text-muted-foreground">إضافة</span>
+                  </button>
+                </li>
+              ) : null}
+            </ul>
           ) : (
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
+              disabled={processing}
               className="mt-4 flex w-full flex-col items-center gap-3 rounded-xl border border-dashed border-input bg-secondary/25 px-6 py-10 text-center transition-colors hover:border-primary/50 hover:bg-secondary/40"
             >
-              <Camera className="size-7 text-primary" />
-              <span className="text-sm font-medium">التقاط صورة بالكاميرا الآن</span>
+              {processing ? <Loader2 className="size-7 animate-spin text-primary" /> : <Camera className="size-7 text-primary" />}
+              <span className="text-sm font-medium">التقاط الصورة الأولى بالكاميرا</span>
               <span className="text-xs text-muted-foreground">
                 يُفتح كاميرا الجهاز مباشرة — لا يمكن الاختيار من الملفات أو الاستوديو
               </span>
             </button>
           )}
+          {slotsLeft === 0 ? (
+            <p className="mt-2 text-xs text-warning">وصلت للحد الأقصى ({MAX_INSPECTION_PHOTOS} صورة).</p>
+          ) : null}
 
           <div className="mt-5 space-y-3">
             <label className="block text-xs text-muted-foreground">
@@ -232,11 +303,15 @@ function AiInspectionPage() {
 
           <button
             onClick={runAnalysis}
-            disabled={!preview || loading}
+            disabled={!canAnalyzePhotos(photos.length) || loading || processing}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-            {loading ? "جارٍ تحليل الصورة…" : "تحليل الصورة وتوليد التقرير"}
+            {loading
+              ? `جارٍ تحليل ${photos.length} صورة…`
+              : photos.length > 1
+                ? `تحليل ${photos.length} صور وتوليد التقرير`
+                : "تحليل الصورة وتوليد التقرير"}
           </button>
         </section>
 
@@ -254,7 +329,7 @@ function AiInspectionPage() {
             </div>
           ) : !report ? (
             <p className="mt-6 rounded-xl border border-dashed border-input bg-secondary/20 p-8 text-center text-sm text-muted-foreground">
-              لا يوجد تقرير بعد. ارفع صورة الأصل ثم اضغط «تحليل الصورة».
+              لا يوجد تقرير بعد. التقط صورة واحدة على الأقل ثم اضغط «تحليل».
             </p>
           ) : (
             <div className="mt-4 space-y-5">
@@ -344,6 +419,7 @@ function AiInspectionPage() {
                 </button>
                 <button
                   onClick={runAnalysis}
+                  disabled={loading || saving}
                   className="rounded-lg border border-input bg-secondary/40 px-4 py-2.5 text-sm font-medium hover:bg-secondary"
                 >
                   إعادة التحليل
