@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Sparkles, Camera, X, CheckCircle2 } from "lucide-react";
+import { Loader2, Sparkles, Camera, X, CheckCircle2, Plus } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -10,6 +10,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery, orgDataQuery } from "@/lib/org-data";
 import { analyzeAssetImage, AREA_LABELS, type AiInspectionReport } from "@/lib/inspect.functions";
+import {
+  MAX_INSPECTION_PHOTOS,
+  canAnalyzePhotos,
+  compressPhoto,
+  dataUrlToBlob,
+  remainingPhotoSlots,
+} from "@/lib/photo-limits";
 
 export const Route = createFileRoute("/_authenticated/ai-inspection")({
   head: () => ({
@@ -296,11 +303,15 @@ function AiInspectionPage() {
 
           <button
             onClick={runAnalysis}
-            disabled={!preview || loading}
+            disabled={!canAnalyzePhotos(photos.length) || loading || processing}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-            {loading ? "جارٍ تحليل الصورة…" : "تحليل الصورة وتوليد التقرير"}
+            {loading
+              ? `جارٍ تحليل ${photos.length} صورة…`
+              : photos.length > 1
+                ? `تحليل ${photos.length} صور وتوليد التقرير`
+                : "تحليل الصورة وتوليد التقرير"}
           </button>
         </section>
 
@@ -318,7 +329,7 @@ function AiInspectionPage() {
             </div>
           ) : !report ? (
             <p className="mt-6 rounded-xl border border-dashed border-input bg-secondary/20 p-8 text-center text-sm text-muted-foreground">
-              لا يوجد تقرير بعد. ارفع صورة الأصل ثم اضغط «تحليل الصورة».
+              لا يوجد تقرير بعد. التقط صورة واحدة على الأقل ثم اضغط «تحليل».
             </p>
           ) : (
             <div className="mt-4 space-y-5">
@@ -408,6 +419,7 @@ function AiInspectionPage() {
                 </button>
                 <button
                   onClick={runAnalysis}
+                  disabled={loading || saving}
                   className="rounded-lg border border-input bg-secondary/40 px-4 py-2.5 text-sm font-medium hover:bg-secondary"
                 >
                   إعادة التحليل
