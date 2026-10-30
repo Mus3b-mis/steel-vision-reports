@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Sparkles, UserRound } from "lucide-react";
+import { Images, Sparkles, UserRound } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 import { AppShell } from "@/components/AppShell";
 import { ResultBadge } from "@/components/StatusBadge";
@@ -70,6 +72,7 @@ function InspectionsPage() {
               <ResultBadge result={i.result} />
             </div>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{i.findings}</p>
+            {i.photos.length ? <InspectionPhotos paths={i.photos} /> : null}
             <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <UserRound className="size-3.5" />
@@ -88,5 +91,49 @@ function InspectionsPage() {
         ))}
       </ol>
     </AppShell>
+  );
+}
+
+function InspectionPhotos({ paths }: { paths: string[] }) {
+  const [open, setOpen] = useState(false);
+  const { data: urls = [], isLoading } = useQuery({
+    queryKey: ["inspection-photos", paths],
+    enabled: open,
+    staleTime: 50 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.storage
+        .from("inspection-photos")
+        .createSignedUrls(paths, 60 * 60);
+      if (error) throw error;
+      return data.map((d) => d.signedUrl).filter(Boolean) as string[];
+    },
+  });
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-secondary/40 px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+      >
+        <Images className="size-3.5" />
+        {open ? "إخفاء الصور" : `عرض الصور (${paths.length})`}
+      </button>
+      {open ? (
+        isLoading ? (
+          <p className="mt-2 text-xs text-muted-foreground">جارٍ تحميل الصور…</p>
+        ) : (
+          <ul className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
+            {urls.map((u, k) => (
+              <li key={u} className="aspect-square overflow-hidden rounded-lg border border-border">
+                <a href={u} target="_blank" rel="noreferrer">
+                  <img src={u} alt={`صورة الفحص ${k + 1}`} className="size-full object-cover" loading="lazy" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      ) : null}
+    </div>
   );
 }

@@ -12,7 +12,7 @@ export type OrgAsset = Asset & {
   model: string;
   year: number | null;
 };
-export type OrgInspection = Inspection & { uuid: string };
+export type OrgInspection = Inspection & { uuid: string; photos: string[] };
 
 const DAY = 86_400_000;
 
@@ -67,6 +67,7 @@ async function fetchOrgData() {
     result: r.result as Inspection["result"],
     findings: r.findings,
     source: r.source as Inspection["source"],
+    photos: r.photos ?? [],
   }));
 
   // last 7 months series
