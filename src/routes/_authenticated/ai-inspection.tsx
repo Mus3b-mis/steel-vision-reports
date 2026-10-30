@@ -171,11 +171,23 @@ function AiInspectionPage() {
   return (
     <AppShell
       title="الفحص الذكي بالصور"
-      subtitle="ارفع صورة واضحة للأصل، وسيحدد الذكاء الاصطناعي الحالة والمخاطر ويملأ تقرير الفحص."
+      subtitle="التقط من صورة واحدة حتى 20 صورة للأصل، وسيحدد الذكاء الاصطناعي الحالة والمخاطر ويملأ تقرير الفحص."
     >
       <div className="grid gap-4 lg:grid-cols-5">
         <section className="frost rounded-2xl p-5 lg:col-span-2">
-          <h2 className="text-base font-bold">1 · صورة الأصل</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-base font-bold">1 · صور الأصل</h2>
+            <span
+              className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
+                photos.length ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"
+              }`}
+            >
+              {photos.length} / {MAX_INSPECTION_PHOTOS}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            صورة واحدة إلزامية، ويمكنك إضافة حتى {MAX_INSPECTION_PHOTOS} صورة من زوايا مختلفة (الهيكل، الإطارات، المحرك، العداد، الأضرار).
+          </p>
 
           <input
             ref={inputRef}
@@ -184,39 +196,62 @@ function AiInspectionPage() {
             capture="environment"
             className="hidden"
             onChange={(e) => {
-              const file = e.target.files?.[0];
+              const files = Array.from(e.target.files ?? []);
               e.target.value = "";
-              pickFile(file);
+              pickFiles(files);
             }}
           />
 
-          {preview ? (
-            <div className="relative mt-4 overflow-hidden rounded-xl border border-border">
-              <img src={preview} alt="صورة الأصل المرفوعة" className="max-h-72 w-full object-cover" />
-              <button
-                onClick={() => {
-                  setPreview(null);
-                  setReport(null);
-                }}
-                aria-label="إزالة الصورة"
-                className="absolute end-2 top-2 grid size-8 place-items-center rounded-lg border border-border bg-popover/80 text-foreground backdrop-blur"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
+          {photos.length ? (
+            <ul className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {photos.map((src, i) => (
+                <li key={i} className="relative aspect-square overflow-hidden rounded-lg border border-border">
+                  <img src={src} alt={`صورة الأصل ${i + 1}`} className="size-full object-cover" />
+                  <span className="absolute start-1 top-1 rounded bg-popover/80 px-1.5 text-[10px] font-semibold text-foreground backdrop-blur">
+                    {i + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(i)}
+                    aria-label={`إزالة الصورة ${i + 1}`}
+                    className="absolute end-1 top-1 grid size-6 place-items-center rounded-md border border-border bg-popover/80 text-foreground backdrop-blur"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </li>
+              ))}
+              {slotsLeft > 0 ? (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    disabled={processing || loading}
+                    aria-label="التقاط صورة إضافية"
+                    className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-input bg-secondary/25 text-primary transition-colors hover:border-primary/50 hover:bg-secondary/40 disabled:opacity-50"
+                  >
+                    {processing ? <Loader2 className="size-5 animate-spin" /> : <Plus className="size-5" />}
+                    <span className="text-[10px] text-muted-foreground">إضافة</span>
+                  </button>
+                </li>
+              ) : null}
+            </ul>
           ) : (
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
+              disabled={processing}
               className="mt-4 flex w-full flex-col items-center gap-3 rounded-xl border border-dashed border-input bg-secondary/25 px-6 py-10 text-center transition-colors hover:border-primary/50 hover:bg-secondary/40"
             >
-              <Camera className="size-7 text-primary" />
-              <span className="text-sm font-medium">التقاط صورة بالكاميرا الآن</span>
+              {processing ? <Loader2 className="size-7 animate-spin text-primary" /> : <Camera className="size-7 text-primary" />}
+              <span className="text-sm font-medium">التقاط الصورة الأولى بالكاميرا</span>
               <span className="text-xs text-muted-foreground">
                 يُفتح كاميرا الجهاز مباشرة — لا يمكن الاختيار من الملفات أو الاستوديو
               </span>
             </button>
           )}
+          {slotsLeft === 0 ? (
+            <p className="mt-2 text-xs text-warning">وصلت للحد الأقصى ({MAX_INSPECTION_PHOTOS} صورة).</p>
+          ) : null}
 
           <div className="mt-5 space-y-3">
             <label className="block text-xs text-muted-foreground">
