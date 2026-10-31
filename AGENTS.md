@@ -17,3 +17,5 @@
 - Platform super admin is a `super_admin` row in `user_roles`, granted by `ensure_platform_admin()` to the owner's email; all `/admin` reads/writes go through `admin_*` security-definer RPCs that check `has_role` — company admins can never change status/plan.
 - Blocking is enforced in `user_org_id()` (blocked user or blocked company ⇒ no data) plus a blocked screen in the `_authenticated` gate.
 - Inspection photos live in the private `inspection-photos` bucket at `<organization_id>/<inspection_id>/<n>.jpg` (storage RLS checks the first folder against `user_org_id()`); paths are stored in `inspections.photos` and shown via signed URLs — keeps photos company-private. Photos are downscaled in the browser before analysis so many photos fit one request.
+- The in-progress AI inspection (photos, fields, report) is saved per user in IndexedDB (`src/lib/inspection-draft.ts`) and restored on load; cleared on approve or "فحص جديد" — phones reload the tab while the camera is open.
+- The root auth listener ignores repeated `SIGNED_IN` for the same user — mobile browsers re-emit it when the tab regains focus, which would reload pages and drop unsaved work.
