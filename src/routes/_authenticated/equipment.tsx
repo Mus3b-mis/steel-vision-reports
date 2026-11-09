@@ -11,6 +11,8 @@ import { orgDataQuery } from "@/lib/org-data";
 export const Route = createFileRoute("/_authenticated/equipment")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "سجل الأسطول والمعدات | وثيق" },
       {
         name: "description",

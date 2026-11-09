@@ -10,6 +10,8 @@ import { lovable } from "@/integrations/lovable/index";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "تسجيل الدخول | وثيق" },
       { name: "description", content: "سجّل الدخول أو أنشئ حساب شركتك في منصة وثيق لفحص الأصول والمعدات." },
       { property: "og:title", content: "تسجيل الدخول | وثيق" },

@@ -4,6 +4,8 @@ import { Boxes, ClipboardList, ScanSearch, ShieldCheck, Users } from "lucide-rea
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "وثيق | منصة سحابية لفحص الأصول والمعدات" },
       { name: "description", content: "سجل معدات، فحوصات دورية، امتثال تنظيمي، وفحص ذكي بالصور لفريقك في منصة واحدة." },
       { property: "og:title", content: "وثيق | منصة سحابية لفحص الأصول والمعدات" },

@@ -23,6 +23,8 @@ import { companyPermissions } from "@/lib/company-permissions";
 export const Route = createFileRoute("/_authenticated/ai-inspection")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "الفحص الذكي بالصور | وثيق" },
       {
         name: "description",

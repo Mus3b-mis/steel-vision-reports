@@ -13,6 +13,8 @@ import { companyPermissions, roleLabels } from "@/lib/company-permissions";
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "الفريق | وثيق" },
       { name: "description", content: "إدارة أعضاء فريق شركتك ودعوة زملاء جدد في منصة وثيق." },
       { property: "og:title", content: "الفريق | وثيق" },

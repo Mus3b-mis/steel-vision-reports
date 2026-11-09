@@ -29,6 +29,13 @@
       "when": 1794261274619,
       "tag": "0003_company_codes_and_hierarchy",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794261388234,
+      "tag": "0004_harden_company_invite_join",
+      "breakpoints": true
     }
   ]
 }

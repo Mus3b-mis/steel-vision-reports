@@ -10,6 +10,8 @@ import type { ComplianceState } from "@/lib/demo-data";
 export const Route = createFileRoute("/_authenticated/compliance")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "حالة الامتثال | وثيق" },
       {
         name: "description",
