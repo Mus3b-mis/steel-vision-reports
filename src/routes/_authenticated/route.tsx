@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { ShieldOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { CompanyOnboarding } from "@/components/CompanyOnboarding";
 
 let bootstrappedFor: string | null = null;
 
@@ -11,9 +12,13 @@ export const Route = createFileRoute("/_authenticated")({
     if (error || !data.user) throw redirect({ to: "/auth" });
     if (bootstrappedFor !== data.user.id) {
       await supabase.rpc("ensure_platform_admin");
-      const { error: e } = await supabase.rpc("ensure_account");
+      const { data: orgId, error: e } = await supabase.rpc("ensure_account");
       if (e) throw e;
-      bootstrappedFor = data.user.id;
+      if (orgId) bootstrappedFor = data.user.id;
+      else {
+        const { data: access } = await supabase.rpc("my_access_state");
+        return { user: data.user, access: access === "ok" ? "onboarding" : (access ?? "onboarding") };
+      }
     }
     const { data: access } = await supabase.rpc("my_access_state");
     return { user: data.user, access: (access ?? "ok") as string };
@@ -23,6 +28,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function Gate() {
   const { access } = Route.useRouteContext();
+  if (access === "onboarding") return <CompanyOnboarding />;
   if (access === "ok") return <Outlet />;
   return (
     <div className="flex min-h-screen items-center justify-center px-4">

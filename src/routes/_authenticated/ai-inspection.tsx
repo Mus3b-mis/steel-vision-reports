@@ -18,6 +18,7 @@ import {
   remainingPhotoSlots,
 } from "@/lib/photo-limits";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/inspection-draft";
+import { companyPermissions } from "@/lib/company-permissions";
 
 export const Route = createFileRoute("/_authenticated/ai-inspection")({
   head: () => ({
@@ -134,7 +135,7 @@ function AiInspectionPage() {
         created_by: me.userId,
       });
       if (error) throw error;
-      if (match) {
+      if (match && companyPermissions(me.role).approveInspections) {
         const next = new Date(Date.now() + 90 * 86_400_000).toISOString().slice(0, 10);
         const { error: e2 } = await supabase
           .from("assets")
@@ -151,7 +152,7 @@ function AiInspectionPage() {
       await queryClient.invalidateQueries({ queryKey: ["org-data"] });
       setSaved(true);
       await clearDraft(me.userId);
-      toast.success(match ? "تم اعتماد التقرير وتحديث حالة المعدة" : "تم اعتماد التقرير وإضافته لسجل الفحوصات");
+      toast.success(!companyPermissions(me.role).approveInspections ? "تم إرسال الفحص للمسؤول لاعتماده" : match ? "تم اعتماد التقرير وتحديث حالة المعدة" : "تم اعتماد التقرير وإضافته لسجل الفحوصات");
     } catch (err) {
       console.error(err);
       toast.error("تعذّر حفظ التقرير، حاول مرة أخرى");
@@ -474,7 +475,7 @@ function AiInspectionPage() {
                   className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
                 >
                   <CheckCircle2 className="size-4" />
-                  اعتماد التقرير
+                  {companyPermissions(me?.role).approveInspections ? "اعتماد التقرير" : "إرسال للمراجعة"}
                 </button>
                 <button
                   onClick={runAnalysis}
@@ -485,7 +486,7 @@ function AiInspectionPage() {
                 </button>
                 {saved ? (
                   <span className="inline-flex items-center gap-1.5 self-center text-xs text-success">
-                    <CheckCircle2 className="size-3.5" /> مُعتمد
+                    <CheckCircle2 className="size-3.5" /> {companyPermissions(me?.role).approveInspections ? "مُعتمد" : "بانتظار الاعتماد"}
                   </span>
                 ) : null}
               </div>

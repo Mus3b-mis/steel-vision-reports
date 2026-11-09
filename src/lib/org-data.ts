@@ -12,7 +12,7 @@ export type OrgAsset = Asset & {
   model: string;
   year: number | null;
 };
-export type OrgInspection = Inspection & { uuid: string; photos: string[] };
+export type OrgInspection = Inspection & { uuid: string; photos: string[]; approvalStatus: "pending" | "approved" };
 
 const DAY = 86_400_000;
 
@@ -68,6 +68,7 @@ async function fetchOrgData() {
     findings: r.findings,
     source: r.source as Inspection["source"],
     photos: r.photos ?? [],
+    approvalStatus: r.approval_status === "pending" ? "pending" : "approved",
   }));
 
   // last 7 months series
@@ -75,7 +76,7 @@ async function fetchOrgData() {
   const monthly = Array.from({ length: 7 }, (_, k) => {
     const d = new Date(now.getFullYear(), now.getMonth() - 6 + k, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const rows = i.data.filter((r) => r.inspected_on.startsWith(key));
+    const rows = i.data.filter((r) => r.approval_status === "approved" && r.inspected_on.startsWith(key));
     return {
       month: monthFmt.format(d),
       عدد: rows.length,
@@ -92,7 +93,7 @@ async function fetchOrgData() {
     overdue: assets.filter((x) => x.compliance === "overdue").length,
     outOfService: assets.filter((x) => x.status === "out_of_service").length,
     avgHealth: total ? Math.round(assets.reduce((s, x) => s + x.healthScore, 0) / total) : 0,
-    inspectionsThisMonth: i.data.filter((r) => r.inspected_on.startsWith(thisMonth)).length,
+    inspectionsThisMonth: i.data.filter((r) => r.approval_status === "approved" && r.inspected_on.startsWith(thisMonth)).length,
     complianceRate: 0,
   };
   stats.complianceRate = total ? Math.round((stats.compliant / total) * 100) : 0;
