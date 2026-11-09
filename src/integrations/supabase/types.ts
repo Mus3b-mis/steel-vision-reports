@@ -109,8 +109,34 @@ export type Database = {
         }
         Relationships: []
       }
+      company_join_codes: {
+        Row: {
+          code: string
+          organization_id: string
+        }
+        Insert: {
+          code?: string
+          organization_id: string
+        }
+        Update: {
+          code?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_join_codes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspections: {
         Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
           asset_id: string | null
           asset_name: string
           checklist: Json | null
@@ -131,6 +157,9 @@ export type Database = {
           source: string
         }
         Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           asset_id?: string | null
           asset_name: string
           checklist?: Json | null
@@ -151,6 +180,9 @@ export type Database = {
           source?: string
         }
         Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           asset_id?: string | null
           asset_name?: string
           checklist?: Json | null
@@ -385,6 +417,11 @@ export type Database = {
         }
         Returns: undefined
       }
+      approve_company_inspection: {
+        Args: { _inspection: string }
+        Returns: undefined
+      }
+      create_company_account: { Args: { _name: string }; Returns: string }
       ensure_account: { Args: never; Returns: string }
       ensure_platform_admin: { Args: never; Returns: undefined }
       has_role: {
@@ -395,7 +432,14 @@ export type Database = {
         Returns: boolean
       }
       is_org_admin: { Args: never; Returns: boolean }
+      is_org_owner: { Args: never; Returns: boolean }
+      join_company: { Args: { _code: string }; Returns: string }
       my_access_state: { Args: never; Returns: string }
+      rotate_company_code: { Args: never; Returns: string }
+      set_company_member_role: {
+        Args: { _role: Database["public"]["Enums"]["org_role"]; _user: string }
+        Returns: undefined
+      }
       user_org_id: { Args: never; Returns: string }
     }
     Enums: {
