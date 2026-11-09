@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "تسجيل الدخول | وثيق" },
       { name: "description", content: "سجّل الدخول أو أنشئ حساب شركتك في منصة وثيق لفحص الأصول والمعدات." },
       { property: "og:title", content: "تسجيل الدخول | وثيق" },
@@ -24,6 +27,8 @@ const input =
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
+  const [companyMode, setCompanyMode] = useState<"create" | "join">("create");
+  const [joinCode, setJoinCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
   const [f, setF] = useState({ email: "", password: "", fullName: "", jobTitle: "", company: "" });
@@ -50,8 +55,8 @@ function AuthPage() {
           email: f.email,
           password: f.password,
           options: {
-            emailRedirectTo: window.location.origin + "/dashboard",
-            data: { full_name: f.fullName, job_title: f.jobTitle, company: f.company },
+            emailRedirectTo: window.location.origin + "/auth",
+            data: { full_name: f.fullName, job_title: f.jobTitle, company: companyMode === "create" ? f.company : "", join_code: companyMode === "join" ? joinCode.trim().toUpperCase() : "" },
           },
         });
         if (error) throw error;
@@ -94,23 +99,23 @@ function AuthPage() {
           <span className="font-display text-xl font-extrabold text-gradient-steel">وثيق</span>
         </Link>
         <h1 className="mt-6 text-xl font-bold">
-          {mode === "signin" ? "تسجيل الدخول" : mode === "signup" ? "إنشاء حساب شركة" : "استعادة كلمة المرور"}
+          {mode === "signin" ? "تسجيل الدخول" : mode === "signup" ? "إنشاء حساب" : "استعادة كلمة المرور"}
         </h1>
 
         {sent ? (
           <div className="mt-5 rounded-xl border border-border bg-secondary/30 p-4 text-sm leading-relaxed">
             {sent}
-            <button onClick={() => { setSent(null); setMode("signin"); }} className="mt-3 block text-primary hover:underline">
+            <Button onClick={() => { setSent(null); setMode("signin"); }} className="mt-3 block text-primary hover:underline">
               العودة لتسجيل الدخول
-            </button>
+            </Button>
           </div>
         ) : (
           <>
             {mode !== "forgot" ? (
               <>
-                <button onClick={google} type="button" className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-input bg-secondary/40 text-sm font-medium hover:bg-secondary">
+                <Button onClick={google} type="button" className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-input bg-secondary/40 text-sm font-medium hover:bg-secondary">
                   المتابعة بحساب Google
-                </button>
+                </Button>
                 <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="h-px flex-1 bg-border" /> أو بالبريد <span className="h-px flex-1 bg-border" />
                 </div>
@@ -119,10 +124,14 @@ function AuthPage() {
             <form onSubmit={submit} className="space-y-3">
               {mode === "signup" ? (
                 <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button type="button" variant={companyMode === "create" ? "default" : "outline"} onClick={() => setCompanyMode("create")}>إنشاء شركة</Button>
+                    <Button type="button" variant={companyMode === "join" ? "default" : "outline"} onClick={() => setCompanyMode("join")}>الانضمام لشركة</Button>
+                  </div>
                   <label className="block text-xs text-muted-foreground">الاسم الكامل<input required value={f.fullName} onChange={set("fullName")} className={input} /></label>
                   <div className="grid grid-cols-2 gap-3">
                     <label className="block text-xs text-muted-foreground">المسمى الوظيفي<input value={f.jobTitle} onChange={set("jobTitle")} className={input} /></label>
-                    <label className="block text-xs text-muted-foreground">اسم الشركة<input required value={f.company} onChange={set("company")} className={input} /></label>
+                    {companyMode === "create" ? <label className="block text-xs text-muted-foreground">اسم الشركة<input required maxLength={120} value={f.company} onChange={set("company")} className={input} /></label> : <label className="block text-xs text-muted-foreground">كود الشركة<input required dir="ltr" maxLength={30} value={joinCode} onChange={e => setJoinCode(e.target.value)} className={input} /></label>}
                   </div>
                 </>
               ) : null}
@@ -130,19 +139,19 @@ function AuthPage() {
               {mode !== "forgot" ? (
                 <label className="block text-xs text-muted-foreground">كلمة المرور<input required type="password" minLength={8} dir="ltr" value={f.password} onChange={set("password")} className={input} /></label>
               ) : null}
-              <button disabled={loading} className="mt-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
+              <Button type="submit" disabled={loading} className="mt-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
                 {loading ? <Loader2 className="size-4 animate-spin" /> : null}
                 {mode === "signin" ? "دخول" : mode === "signup" ? "إنشاء الحساب" : "إرسال رابط الاستعادة"}
-              </button>
+              </Button>
             </form>
             <div className="mt-5 flex flex-wrap justify-between gap-2 text-xs">
               {mode === "signin" ? (
                 <>
-                  <button onClick={() => setMode("signup")} className="text-primary hover:underline">ليس لديك حساب؟ أنشئ حسابًا</button>
-                  <button onClick={() => setMode("forgot")} className="text-muted-foreground hover:underline">نسيت كلمة المرور؟</button>
+                  <Button onClick={() => setMode("signup")} className="text-primary hover:underline">ليس لديك حساب؟ أنشئ حسابًا</Button>
+                  <Button onClick={() => setMode("forgot")} className="text-muted-foreground hover:underline">نسيت كلمة المرور؟</Button>
                 </>
               ) : (
-                <button onClick={() => setMode("signin")} className="text-primary hover:underline">لديك حساب؟ سجّل الدخول</button>
+                <Button onClick={() => setMode("signin")} className="text-primary hover:underline">لديك حساب؟ سجّل الدخول</Button>
               )}
             </div>
             {mode === "signup" ? (

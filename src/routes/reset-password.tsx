@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "تعيين كلمة مرور جديدة | وثيق" },
       { name: "description", content: "عيّن كلمة مرور جديدة لحسابك في منصة وثيق." },
       { property: "og:title", content: "تعيين كلمة مرور جديدة | وثيق" },

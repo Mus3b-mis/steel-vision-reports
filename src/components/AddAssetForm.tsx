@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery } from "@/lib/org-data";
+import { companyPermissions } from "@/lib/company-permissions";
 
 const field =
   "mt-1.5 h-10 w-full rounded-lg border border-input bg-secondary/40 px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring";
@@ -24,7 +25,7 @@ export function AddAssetForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!me) return;
+    if (!me || !companyPermissions(me.role).manageAssets) return;
     const year = f.year ? Number(f.year) : null;
     if (year !== null && (year < 1950 || year > new Date().getFullYear() + 1)) {
       toast.error("سنة الصنع غير صحيحة");
@@ -62,6 +63,7 @@ export function AddAssetForm() {
     qc.invalidateQueries({ queryKey: ["org-data"] });
   }
 
+  if (!companyPermissions(me?.role).manageAssets) return null;
   if (!open)
     return (
       <button
