@@ -7,7 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { ResultBadge } from "@/components/StatusBadge";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { orgDataQuery } from "@/lib/org-data";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { companyPermissions } from "@/lib/company-permissions";
+import { meQuery, orgDataQuery } from "@/lib/org-data";
 
 export const Route = createFileRoute("/_authenticated/inspections")({
   head: () => ({
@@ -37,6 +41,17 @@ const filters = [
 
 function InspectionsPage() {
   const { inspections } = useSuspenseQuery(orgDataQuery).data;
+  const { data: me } = useQuery(meQuery);
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState<string | null>(null);
+  async function approve(id: string) {
+    setBusy(id);
+    const { error } = await supabase.rpc("approve_company_inspection", { _inspection: id });
+    setBusy(null);
+    if (error) { toast.error("تعذّر اعتماد الفحص"); return; }
+    await qc.invalidateQueries({ queryKey: ["org-data"] });
+    toast.success("تم اعتماد الفحص وتحديث حالة المركبة");
+  }
   const [filter, setFilter] = useState<(typeof filters)[number]["key"]>("all");
   const rows = inspections.filter((i) => filter === "all" || i.result === filter);
 
@@ -69,7 +84,9 @@ function InspectionsPage() {
                   {i.id} · {i.assetId} · {i.date}
                 </div>
               </div>
-              <ResultBadge result={i.result} />
+              <div className="flex flex-wrap items-center gap-2"><ResultBadge result={i.result} />
+                {i.approvalStatus === "pending" ? <><span className="text-xs text-warning">بانتظار الاعتماد</span>{companyPermissions(me?.role).approveInspections ? <Button size="sm" disabled={busy !== null} onClick={() => approve(i.uuid)}>اعتماد الفحص</Button> : null}</> : null}
+              </div>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{i.findings}</p>
             {i.photos.length ? <InspectionPhotos paths={i.photos} /> : null}
