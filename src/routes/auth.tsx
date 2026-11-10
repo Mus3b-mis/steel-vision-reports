@@ -105,7 +105,7 @@ function AuthPage() {
         {sent ? (
           <div className="mt-5 rounded-xl border border-border bg-secondary/30 p-4 text-sm leading-relaxed">
             {sent}
-            <Button onClick={() => { setSent(null); setMode("signin"); }} className="mt-3 block text-primary hover:underline">
+            <Button variant="link" onClick={() => { setSent(null); setMode("signin"); }} className="mt-3 block">
               العودة لتسجيل الدخول
             </Button>
           </div>
@@ -113,7 +113,7 @@ function AuthPage() {
           <>
             {mode !== "forgot" ? (
               <>
-                <Button onClick={google} type="button" className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-input bg-secondary/40 text-sm font-medium hover:bg-secondary">
+                <Button variant="outline" onClick={google} type="button" className="mt-5 flex h-11 w-full items-center justify-center gap-2 bg-secondary/40 text-sm font-medium hover:bg-secondary">
                   المتابعة بحساب Google
                 </Button>
                 <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
@@ -147,11 +147,11 @@ function AuthPage() {
             <div className="mt-5 flex flex-wrap justify-between gap-2 text-xs">
               {mode === "signin" ? (
                 <>
-                  <Button onClick={() => setMode("signup")} className="text-primary hover:underline">ليس لديك حساب؟ أنشئ حسابًا</Button>
-                  <Button onClick={() => setMode("forgot")} className="text-muted-foreground hover:underline">نسيت كلمة المرور؟</Button>
+                  <Button variant="link" onClick={() => setMode("signup")} className="px-0">ليس لديك حساب؟ أنشئ حسابًا</Button>
+                  <Button variant="link" onClick={() => setMode("forgot")} className="px-0 text-muted-foreground">نسيت كلمة المرور؟</Button>
                 </>
               ) : (
-                <Button onClick={() => setMode("signin")} className="text-primary hover:underline">لديك حساب؟ سجّل الدخول</Button>
+                <Button variant="link" onClick={() => setMode("signin")} className="px-0">لديك حساب؟ سجّل الدخول</Button>
               )}
             </div>
             {mode === "signup" ? (
