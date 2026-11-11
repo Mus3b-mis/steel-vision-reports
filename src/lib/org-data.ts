@@ -1,3 +1,4 @@
+import type { InspectionKind } from "@/lib/handover";
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Asset, AssetStatus, ComplianceState, Inspection } from "@/lib/demo-data";
@@ -12,7 +13,7 @@ export type OrgAsset = Asset & {
   model: string;
   year: number | null;
 };
-export type OrgInspection = Inspection & { uuid: string; photos: string[]; approvalStatus: "pending" | "approved" };
+export type OrgInspection = Inspection & { uuid: string; photos: string[]; approvalStatus: "pending" | "approved"; kind: InspectionKind; driver: string; fuel: number | null; odometer: number | null; createdAt: string };
 
 const DAY = 86_400_000;
 
@@ -69,6 +70,11 @@ async function fetchOrgData() {
     source: r.source as Inspection["source"],
     photos: r.photos ?? [],
     approvalStatus: r.approval_status === "pending" ? "pending" : "approved",
+    kind: (r.inspection_kind as InspectionKind) ?? "periodic",
+    driver: r.driver_name ?? "",
+    fuel: r.fuel_level,
+    odometer: r.odometer,
+    createdAt: r.created_at,
   }));
 
   // last 7 months series
