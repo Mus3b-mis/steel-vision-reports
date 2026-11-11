@@ -1,3 +1,4 @@
+import { INSPECTION_KINDS, KIND_LABELS, FUEL_LEVELS, FUEL_LABELS, type InspectionKind } from "@/lib/handover";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles, Camera, X, CheckCircle2, Plus, RotateCcw } from "lucide-react";
@@ -49,6 +50,9 @@ function AiInspectionPage() {
   const [assetName, setAssetName] = useState("");
   const [notes, setNotes] = useState("");
   const [odometer, setOdometer] = useState("");
+  const [kind, setKind] = useState<InspectionKind>("periodic");
+  const [driver, setDriver] = useState("");
+  const [fuel, setFuel] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<AiInspectionReport | null>(null);
   const [saved, setSaved] = useState(false);
@@ -75,6 +79,9 @@ function AiInspectionPage() {
         setAssetName(draft.assetName ?? "");
         setNotes(draft.notes ?? "");
         setOdometer(draft.odometer ?? "");
+        setKind((draft.kind as InspectionKind) ?? "periodic");
+        setDriver(draft.driver ?? "");
+        setFuel(draft.fuel ?? null);
         setReport((draft.report as AiInspectionReport | null) ?? null);
         if (draft.photos.length) toast.success(`تم استرجاع ${draft.photos.length} صورة من الفحص الجاري`);
       }
@@ -88,8 +95,8 @@ function AiInspectionPage() {
   // Save every change on the device right away.
   useEffect(() => {
     if (!userId || !draftReady || saved) return;
-    void saveDraft(userId, { photos, assetName, notes, odometer, report });
-  }, [userId, draftReady, saved, photos, assetName, notes, odometer, report]);
+    void saveDraft(userId, { photos, assetName, notes, odometer, report, kind, driver, fuel });
+  }, [userId, draftReady, saved, photos, assetName, notes, odometer, report, kind, driver, fuel]);
 
   async function startNew() {
     if (photos.length && !saved && !window.confirm("سيتم حذف الصور والبيانات الحالية. متابعة؟")) return;
@@ -97,6 +104,9 @@ function AiInspectionPage() {
     setAssetName("");
     setNotes("");
     setOdometer("");
+    setKind("periodic");
+    setDriver("");
+    setFuel(null);
     setReport(null);
     setSaved(false);
     if (userId) await clearDraft(userId);
@@ -104,6 +114,10 @@ function AiInspectionPage() {
 
   async function approve() {
     if (!report || !me) return;
+    if (kind !== "periodic" && !driver.trim()) {
+      toast.error("اكتب اسم السائق المستلم أو المسلّم");
+      return;
+    }
     setSaving(true);
     try {
       const match = matched;
@@ -133,6 +147,9 @@ function AiInspectionPage() {
         report: report as never,
         checklist: (report.checklist?.length ? report.checklist : null) as never,
         odometer: odo,
+        inspection_kind: kind,
+        driver_name: kind === "periodic" ? "" : driver.trim(),
+        fuel_level: kind === "periodic" ? null : fuel,
         photos: paths,
         created_by: me.userId,
       });
@@ -338,6 +355,37 @@ function AiInspectionPage() {
                 <option key={a.id} value={a.name}>{a.plate}</option>
               ))}
             </datalist>
+            <div className="text-xs text-muted-foreground">
+              نوع الفحص
+              <div className="mt-1.5 grid grid-cols-3 gap-2">
+                {INSPECTION_KINDS.map((k) => (
+                  <button key={k} type="button" onClick={() => setKind(k)}
+                    className={`h-10 rounded-lg border text-sm ${kind === k ? "border-primary bg-primary/15 text-foreground" : "border-input bg-secondary/40"}`}>
+                    {KIND_LABELS[k]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {kind !== "periodic" ? (
+              <>
+                <label className="block text-xs text-muted-foreground">
+                  {kind === "checkout" ? "اسم السائق المستلم" : "اسم السائق المُعيد"}
+                  <input value={driver} onChange={(e) => setDriver(e.target.value)} placeholder="مثال: أحمد علي"
+                    className="mt-1.5 h-10 w-full rounded-lg border border-input bg-secondary/40 px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring" />
+                </label>
+                <div className="text-xs text-muted-foreground">
+                  مستوى الوقود
+                  <div className="mt-1.5 grid grid-cols-5 gap-1.5">
+                    {FUEL_LEVELS.map((f) => (
+                      <button key={f} type="button" onClick={() => setFuel(f)}
+                        className={`h-9 rounded-lg border text-xs ${fuel === f ? "border-primary bg-primary/15 text-foreground" : "border-input bg-secondary/40"}`}>
+                        {FUEL_LABELS[f]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : null}
             {isVehicle ? (
               <label className="block text-xs text-muted-foreground">
                 قراءة العداد الحالية (كم)

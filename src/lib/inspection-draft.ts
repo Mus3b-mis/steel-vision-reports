@@ -9,6 +9,9 @@ export type InspectionDraft = {
   notes: string;
   odometer: string;
   report: unknown | null;
+  kind?: string;
+  driver?: string;
+  fuel?: number | null;
   updatedAt: number;
 };
 

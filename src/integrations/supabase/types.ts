@@ -143,11 +143,14 @@ export type Database = {
           code: string
           created_at: string
           created_by: string | null
+          driver_name: string
           findings: string
           findings_count: number
+          fuel_level: number | null
           health_score: number | null
           id: string
           inspected_on: string
+          inspection_kind: string
           inspector_name: string
           odometer: number | null
           organization_id: string
@@ -166,11 +169,14 @@ export type Database = {
           code?: string
           created_at?: string
           created_by?: string | null
+          driver_name?: string
           findings?: string
           findings_count?: number
+          fuel_level?: number | null
           health_score?: number | null
           id?: string
           inspected_on?: string
+          inspection_kind?: string
           inspector_name?: string
           odometer?: number | null
           organization_id: string
@@ -189,11 +195,14 @@ export type Database = {
           code?: string
           created_at?: string
           created_by?: string | null
+          driver_name?: string
           findings?: string
           findings_count?: number
+          fuel_level?: number | null
           health_score?: number | null
           id?: string
           inspected_on?: string
+          inspection_kind?: string
           inspector_name?: string
           odometer?: number | null
           organization_id?: string
