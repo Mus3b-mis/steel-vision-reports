@@ -24,7 +24,10 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { AssetStatusBadge, ComplianceBadge, ResultBadge } from "@/components/StatusBadge";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { orgDataQuery } from "@/lib/org-data";
+import { meQuery, orgDataQuery } from "@/lib/org-data";
+import { useQuery } from "@tanstack/react-query";
+import { isSignificantChange } from "@/lib/damage-delta";
+import { companyPermissions } from "@/lib/company-permissions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -49,6 +52,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const { assets, inspections, monthly: monthlyInspections, stats } = useSuspenseQuery(orgDataQuery).data;
+  const { data: me } = useQuery(meQuery);
+  const bigChanges = inspections.filter((i) => isSignificantChange(i.report?.changes, i.report?.previousHealthScore, i.healthScore) && Date.now() - new Date(i.createdAt).getTime() < 14 * 86_400_000);
   const complianceData = [
   { name: "مطابق", value: stats.compliant, fill: "var(--color-chart-2)" },
   { name: "قريب الاستحقاق", value: stats.dueSoon, fill: "var(--color-chart-3)" },
@@ -63,6 +68,11 @@ function Dashboard() {
       title="لوحة المعلومات"
       subtitle="نظرة شاملة على حالة الأصول والفحوصات والامتثال التنظيمي."
     >
+      {companyPermissions(me?.role).approveInspections && bigChanges.length ? (
+        <Link to="/inspections" className="block rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+          ⚠ تنبيه: {bigChanges.length} فحص خلال آخر 14 يومًا رصد تغيّرًا كبيرًا في حالة المركبة ({Array.from(new Set(bigChanges.map((b) => b.assetName))).slice(0, 3).join("، ")}). اضغط للمراجعة.
+        </Link>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={Boxes}

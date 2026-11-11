@@ -13,7 +13,7 @@ export type OrgAsset = Asset & {
   model: string;
   year: number | null;
 };
-export type OrgInspection = Inspection & { uuid: string; photos: string[]; approvalStatus: "pending" | "approved"; kind: InspectionKind; driver: string; fuel: number | null; odometer: number | null; createdAt: string };
+export type OrgInspection = Inspection & { uuid: string; photos: string[]; approvalStatus: "pending" | "approved"; kind: InspectionKind; driver: string; fuel: number | null; odometer: number | null; createdAt: string; healthScore: number | null; report: { changes?: import("@/lib/damage-delta").DamageChange[]; previousHealthScore?: number | null } | null };
 
 const DAY = 86_400_000;
 
@@ -75,6 +75,8 @@ async function fetchOrgData() {
     fuel: r.fuel_level,
     odometer: r.odometer,
     createdAt: r.created_at,
+    healthScore: r.health_score,
+    report: (r.report as OrgInspection["report"]) ?? null,
   }));
 
   // last 7 months series
