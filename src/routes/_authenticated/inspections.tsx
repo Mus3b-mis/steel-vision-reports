@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { ResultBadge } from "@/components/StatusBadge";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { KIND_LABELS, FUEL_LABELS, tripDistance } from "@/lib/handover";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { companyPermissions } from "@/lib/company-permissions";
@@ -90,6 +91,20 @@ function InspectionsPage() {
                 {i.approvalStatus === "pending" ? <><span className="text-xs text-warning">بانتظار الاعتماد</span>{companyPermissions(me?.role).approveInspections ? <Button size="sm" disabled={busy !== null} onClick={() => approve(i.uuid)}>اعتماد الفحص</Button> : null}</> : null}
               </div>
             </div>
+            {i.kind !== "periodic" ? (
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className={`rounded-full border px-2.5 py-1 ${i.kind === "checkout" ? "border-primary/50 text-primary" : "border-success/50 text-success"}`}>{KIND_LABELS[i.kind]}</span>
+                {i.driver ? <span className="rounded-full border border-border px-2.5 py-1 text-muted-foreground">السائق: {i.driver}</span> : null}
+                {i.fuel != null ? <span className="rounded-full border border-border px-2.5 py-1 text-muted-foreground">الوقود: {FUEL_LABELS[i.fuel]}</span> : null}
+                {i.odometer != null ? <span className="rounded-full border border-border px-2.5 py-1 text-muted-foreground">العداد: {i.odometer} كم</span> : null}
+                {(() => {
+                  if (i.kind !== "checkin") return null;
+                  const out = inspections.filter((o) => o.kind === "checkout" && o.assetName === i.assetName && o.createdAt < i.createdAt).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+                  const d = out ? tripDistance(out.odometer, i.odometer) : null;
+                  return d != null ? <span className="rounded-full border border-border px-2.5 py-1 text-foreground">المسافة منذ التسليم: {d} كم{out?.driver ? ` (${out.driver})` : ""}</span> : null;
+                })()}
+              </div>
+            ) : null}
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{i.findings}</p>
             {i.photos.length ? <InspectionPhotos paths={i.photos} /> : null}
             <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
