@@ -36,6 +36,13 @@
       "when": 1794261388234,
       "tag": "0004_harden_company_invite_join",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794408830614,
+      "tag": "0005_inspection_handover",
+      "breakpoints": true
     }
   ]
 }
