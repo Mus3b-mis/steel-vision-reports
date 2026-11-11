@@ -1,3 +1,4 @@
+import { CHANGE_LABELS, isSignificantChange } from "@/lib/damage-delta";
 import { INSPECTION_KINDS, KIND_LABELS, FUEL_LEVELS, FUEL_LABELS, type InspectionKind } from "@/lib/handover";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -228,6 +229,10 @@ function AiInspectionPage() {
           assetName: assetName || undefined,
           isVehicle,
           notes: notes || undefined,
+          previous: (() => {
+            const prev = (org?.inspections ?? []).filter((x) => x.approvalStatus === "approved" && (matched ? x.assetId === matched.id : x.assetName === assetName.trim())).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+            return prev && assetName.trim() ? { date: prev.date, healthScore: prev.healthScore, findings: prev.findings.slice(0, 4000) } : undefined;
+          })(),
         },
       });
       setReport(result);
@@ -461,6 +466,26 @@ function AiInspectionPage() {
                   {report.summary}
                 </p>
               </div>
+
+              {report.changes?.length ? (
+                <div>
+                  <h3 className="text-sm font-bold">مقارنة بالفحص السابق</h3>
+                  {isSignificantChange(report.changes, report.previousHealthScore, report.healthScore) ? (
+                    <p className="mt-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">تغيّر كبير في حالة المركبة — سيظهر تنبيه للمشرف عند الحفظ.</p>
+                  ) : null}
+                  <ul className="mt-2 space-y-2">
+                    {report.changes.map((c, i) => (
+                      <li key={i} className="rounded-xl border border-border bg-secondary/25 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-sm font-semibold">{CHANGE_LABELS[c.type]}: {c.title}</span>
+                          <SeverityBadge severity={c.severity} />
+                        </div>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{c.detail}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
 
               {report.checklist?.length ? (
                 <div>

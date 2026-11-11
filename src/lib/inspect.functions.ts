@@ -11,6 +11,7 @@ const InspectInput = z.object({
   assetName: z.string().optional(),
   notes: z.string().max(1000).optional(),
   isVehicle: z.boolean().optional(),
+  previous: z.object({ date: z.string().max(20), healthScore: z.number().nullable(), findings: z.string().max(4000) }).optional(),
 });
 
 export const VEHICLE_AREAS = ["body", "tires", "brakes", "engine", "electrical", "fluids"] as const;
@@ -29,6 +30,8 @@ export type AiInspectionReport = {
   findings: { title: string; detail: string; severity: "low" | "medium" | "high" }[];
   recommendations: string[];
   suggestedResult: "pass" | "conditional" | "fail";
+  changes: import("@/lib/damage-delta").DamageChange[];
+  previousHealthScore?: number | null;
   checklist: { area: (typeof VEHICLE_AREAS)[number]; status: "ok" | "attention" | "fail" | "not_visible"; note: string }[];
 };
 
@@ -46,6 +49,7 @@ const schema = {
     "recommendations",
     "suggestedResult",
     "checklist",
+    "changes",
   ],
   properties: {
     assetGuess: { type: "string" },
@@ -69,6 +73,20 @@ const schema = {
     },
     recommendations: { type: "array", items: { type: "string" } },
     suggestedResult: { type: "string", enum: ["pass", "conditional", "fail"] },
+    changes: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "detail", "severity", "type"],
+        properties: {
+          title: { type: "string" },
+          detail: { type: "string" },
+          severity: { type: "string", enum: ["low", "medium", "high"] },
+          type: { type: "string", enum: ["new", "worsened", "resolved", "unchanged"] },
+        },
+      },
+    },
     checklist: {
       type: "array",
       items: {
@@ -113,7 +131,7 @@ export const analyzeAssetImage = createServerFn({ method: "POST" })
                 type: "input_text",
                 text: `حلّل حالة هذا الأصل من ${data.imageDataUrls.length} صورة وأعد تقرير فحص منظم بصيغة json.${
                   data.assetName ? `\nاسم الأصل المعلن: ${data.assetName}` : ""
-                }${data.isVehicle === false ? "\nنوع الأصل: معدة ثقيلة" : "\nنوع الأصل: مركبة"}${data.notes ? `\nملاحظات المفتش: ${data.notes}` : ""}`,
+                }${data.isVehicle === false ? "\nنوع الأصل: معدة ثقيلة" : "\nنوع الأصل: مركبة"}${data.notes ? `\nملاحظات المفتش: ${data.notes}` : ""}${data.previous ? `\n\nآخر فحص معتمد لنفس الأصل بتاريخ ${data.previous.date} (درجة الصحة ${data.previous.healthScore ?? "غير معروفة"}):\n${data.previous.findings}\n\nقارن الحالة الحالية بهذا الفحص واملأ changes: كل ضرر جديد (new)، أو ملاحظة تفاقمت (worsened)، أو تم إصلاحها (resolved). لا تضف بنود unchanged إلا للملاحظات المهمة.` : "\n\nلا يوجد فحص سابق؛ أعد changes فارغة."}`,
               },
               ...data.imageDataUrls.flatMap((url, i) => [
                 { type: "input_text", text: `صورة ${i + 1}:` },
@@ -174,5 +192,8 @@ export const analyzeAssetImage = createServerFn({ method: "POST" })
 
     if (!text.trim()) throw new Error("لم يتمكن النظام من قراءة الصورة، حاول بصورة أوضح");
 
-    return JSON.parse(text) as AiInspectionReport;
+    const report = JSON.parse(text) as AiInspectionReport;
+    report.previousHealthScore = data.previous?.healthScore ?? null;
+    if (!data.previous) report.changes = [];
+    return report;
   });

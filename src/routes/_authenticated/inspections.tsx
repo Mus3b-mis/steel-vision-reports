@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { ResultBadge } from "@/components/StatusBadge";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { CHANGE_LABELS, isSignificantChange } from "@/lib/damage-delta";
 import { KIND_LABELS, FUEL_LABELS, tripDistance } from "@/lib/handover";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,10 @@ function InspectionsPage() {
     toast.success("تم اعتماد الفحص وتحديث حالة المركبة");
   }
   const [filter, setFilter] = useState<(typeof filters)[number]["key"]>("all");
-  const rows = inspections.filter((i) => filter === "all" || i.result === filter);
+  const [vehicle, setVehicle] = useState("");
+  const [alertsOnly, setAlertsOnly] = useState(false);
+  const names = Array.from(new Set(inspections.map((i) => i.assetName)));
+  const rows = inspections.filter((i) => (filter === "all" || i.result === filter) && (!vehicle || i.assetName === vehicle) && (!alertsOnly || isSignificantChange(i.report?.changes, i.report?.previousHealthScore, i.healthScore)));
 
   return (
     <AppShell title="سجل الفحوصات" subtitle="تاريخ الفحوصات مرتبًا زمنيًا مع نتائج كل تقرير.">
@@ -74,6 +78,11 @@ function InspectionsPage() {
             {f.label}
           </button>
         ))}
+        <select value={vehicle} onChange={(e) => setVehicle(e.target.value)} className="h-9 rounded-lg border border-input bg-secondary/40 px-2 text-sm">
+          <option value="">كل المركبات</option>
+          {names.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <button onClick={() => setAlertsOnly((v) => !v)} className={`rounded-lg px-3.5 py-2 text-sm ${alertsOnly ? "bg-destructive text-destructive-foreground font-semibold" : "text-muted-foreground hover:bg-secondary/60"}`}>تغيّرات كبيرة فقط</button>
       </div>
 
       <ol className="relative space-y-4 border-s border-border ps-5">
@@ -103,6 +112,14 @@ function InspectionsPage() {
                   const d = out ? tripDistance(out.odometer, i.odometer) : null;
                   return d != null ? <span className="rounded-full border border-border px-2.5 py-1 text-foreground">المسافة منذ التسليم: {d} كم{out?.driver ? ` (${out.driver})` : ""}</span> : null;
                 })()}
+              </div>
+            ) : null}
+            {i.report?.changes?.length ? (
+              <div className={`mt-3 rounded-xl border p-3 ${isSignificantChange(i.report.changes, i.report.previousHealthScore, i.healthScore) ? "border-destructive/40 bg-destructive/10" : "border-border bg-secondary/25"}`}>
+                <div className="text-xs font-bold">{isSignificantChange(i.report.changes, i.report.previousHealthScore, i.healthScore) ? "⚠ تغيّر كبير مقارنة بالفحص السابق" : "مقارنة بالفحص السابق"}{i.report.previousHealthScore != null && i.healthScore != null ? ` · الصحة ${i.report.previousHealthScore} ← ${i.healthScore}` : ""}</div>
+                <ul className="mt-1.5 space-y-1 text-xs text-muted-foreground">
+                  {i.report.changes.filter((c) => c.type !== "unchanged").map((c, k) => <li key={k}><span className="font-semibold text-foreground">{CHANGE_LABELS[c.type]}:</span> {c.title} — {c.detail}</li>)}
+                </ul>
               </div>
             ) : null}
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{i.findings}</p>
