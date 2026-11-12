@@ -1,5 +1,5 @@
 import { CHANGE_LABELS, isSignificantChange } from "@/lib/damage-delta";
-import { INSPECTION_KINDS, KIND_LABELS, FUEL_LEVELS, FUEL_LABELS, type InspectionKind } from "@/lib/handover";
+import { activeCheckoutForAsset, canCheckInVehicle, INSPECTION_KINDS, KIND_LABELS, FUEL_LEVELS, FUEL_LABELS, type InspectionKind } from "@/lib/handover";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles, Camera, X, CheckCircle2, Plus, RotateCcw } from "lucide-react";
