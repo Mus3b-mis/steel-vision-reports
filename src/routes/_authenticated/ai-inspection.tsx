@@ -76,6 +76,9 @@ function AiInspectionPage() {
   const slotsLeft = remainingPhotoSlots(photos.length);
   const userId = me?.userId;
   const [draftReady, setDraftReady] = useState(false);
+  useEffect(() => {
+    if (kind === "checkin" && activeCheckout?.driver) setDriver(activeCheckout.driver);
+  }, [kind, activeCheckout?.driver]);
 
   // Restore the in-progress inspection if the phone reloaded the page while the camera was open.
   useEffect(() => {
