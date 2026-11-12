@@ -68,7 +68,9 @@ function AiInspectionPage() {
   const checkinAllowed = canCheckInVehicle(matched, activeCheckout);
   const selectableAssets = kind === "checkin"
     ? assets.filter((a) => canCheckInVehicle(a, activeCheckoutForAsset(inspections, a.id, a.name)))
-    : assets;
+    : kind === "checkout"
+      ? assets.filter((a) => a.assetType === "vehicle" && !activeCheckoutForAsset(inspections, a.id, a.name))
+      : assets;
   const isVehicle = matched ? matched.assetType === "vehicle" : true;
   const odo = odometer ? Math.max(0, Math.round(Number(odometer))) : null;
   const slotsLeft = remainingPhotoSlots(photos.length);
@@ -373,19 +375,17 @@ function AiInspectionPage() {
           <div className="mt-5 space-y-3">
             <label className="block text-xs text-muted-foreground">
               المركبة أو المعدة (اختر من السجل لربط التقرير بها)
-              <input
-                value={assetName}
+              <select
+                value={selectableAssets.some((a) => a.name === assetName) ? assetName : ""}
                 onChange={(e) => setAssetName(e.target.value)}
-                list="asset-names"
-                placeholder="مثال: تويوتا هايلكس 2022"
                 className="mt-1.5 h-10 w-full rounded-lg border border-input bg-secondary/40 px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-              />
+              >
+                <option value="">{selectableAssets.length ? "اختر من السجل" : kind === "checkin" ? "لا توجد مركبات مسلّمة حاليًا" : "لا توجد مركبات متاحة"}</option>
+                {selectableAssets.map((a) => (
+                  <option key={a.id} value={a.name}>{a.name}{a.plate ? ` — ${a.plate}` : ""}</option>
+                ))}
+              </select>
             </label>
-            <datalist id="asset-names">
-              {selectableAssets.map((a) => (
-                <option key={a.id} value={a.name}>{a.plate}</option>
-              ))}
-            </datalist>
             <div className="text-xs text-muted-foreground">
               نوع الفحص
               <div className="mt-1.5 grid grid-cols-3 gap-2">
@@ -410,7 +410,7 @@ function AiInspectionPage() {
               <>
                 <label className="block text-xs text-muted-foreground">
                   {kind === "checkout" ? "اسم السائق المستلم" : "اسم السائق المُعيد"}
-                  <input value={driver} onChange={(e) => setDriver(e.target.value)} placeholder="مثال: أحمد علي"
+                  <input value={kind === "checkin" && activeCheckout?.driver ? activeCheckout.driver : driver} readOnly={kind === "checkin" && !!activeCheckout?.driver} onChange={(e) => setDriver(e.target.value)} placeholder="مثال: أحمد علي"
                     className="mt-1.5 h-10 w-full rounded-lg border border-input bg-secondary/40 px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring" />
                 </label>
                 <div className="text-xs text-muted-foreground">

@@ -59,7 +59,7 @@ function InspectionsPage() {
   const [filter, setFilter] = useState<(typeof filters)[number]["key"]>("all");
   const [vehicle, setVehicle] = useState("");
   const [alertsOnly, setAlertsOnly] = useState(false);
-  const names = Array.from(new Set(inspections.map((i) => i.assetName)));
+  const names = Array.from(new Set(inspections.filter((i) => filter === "all" || i.result === filter).map((i) => i.assetName)));
   const rows = inspections.filter((i) => (filter === "all" || i.result === filter) && (!vehicle || i.assetName === vehicle) && (!alertsOnly || isSignificantChange(i.report?.changes, i.report?.previousHealthScore, i.healthScore)));
 
   return (
@@ -68,7 +68,7 @@ function InspectionsPage() {
         {filters.map((f) => (
           <button
             key={f.key}
-            onClick={() => setFilter(f.key)}
+            onClick={() => { setFilter(f.key); setVehicle(""); }}
             className={`rounded-lg px-3.5 py-2 text-sm transition-colors ${
               filter === f.key
                 ? "bg-primary text-primary-foreground font-semibold"
