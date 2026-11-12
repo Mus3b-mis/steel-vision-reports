@@ -43,6 +43,13 @@
       "when": 1794408830614,
       "tag": "0005_inspection_handover",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794446909401,
+      "tag": "0006_require_prior_checkout_for_vehicle_checkin",
+      "breakpoints": true
     }
   ]
 }
