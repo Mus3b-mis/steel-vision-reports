@@ -62,7 +62,13 @@ function AiInspectionPage() {
   const { data: me } = useQuery(meQuery);
   const queryClient = useQueryClient();
   const assets = org?.assets ?? [];
+  const inspections = org?.inspections ?? [];
   const matched = assets.find((a) => a.name === assetName.trim() || (a.plate && a.plate === assetName.trim()));
+  const activeCheckout = matched ? activeCheckoutForAsset(inspections, matched.id, matched.name) : null;
+  const checkinAllowed = canCheckInVehicle(matched, activeCheckout);
+  const selectableAssets = kind === "checkin"
+    ? assets.filter((a) => canCheckInVehicle(a, activeCheckoutForAsset(inspections, a.id, a.name)))
+    : assets;
   const isVehicle = matched ? matched.assetType === "vehicle" : true;
   const odo = odometer ? Math.max(0, Math.round(Number(odometer))) : null;
   const slotsLeft = remainingPhotoSlots(photos.length);
@@ -93,6 +99,11 @@ function AiInspectionPage() {
     };
   }, [userId]);
 
+  // A restored draft may reference a vehicle that has already been returned.
+  useEffect(() => {
+    if (draftReady && org && kind === "checkin" && matched && !checkinAllowed) setKind("periodic");
+  }, [draftReady, org, kind, matched, checkinAllowed]);
+
   // Save every change on the device right away.
   useEffect(() => {
     if (!userId || !draftReady || saved) return;
@@ -115,6 +126,10 @@ function AiInspectionPage() {
 
   async function approve() {
     if (!report || !me) return;
+    if (kind === "checkin" && !checkinAllowed) {
+      toast.error("الاستلام متاح فقط لمركبة لها تسليم معتمد ولم تُستلم بعد");
+      return;
+    }
     if (kind !== "periodic" && !driver.trim()) {
       toast.error("اكتب اسم السائق المستلم أو المسلّم");
       return;
@@ -175,7 +190,14 @@ function AiInspectionPage() {
       toast.success(!companyPermissions(me.role).approveInspections ? "تم إرسال الفحص للمسؤول لاعتماده" : match ? "تم اعتماد التقرير وتحديث حالة المعدة" : "تم اعتماد التقرير وإضافته لسجل الفحوصات");
     } catch (err) {
       console.error(err);
-      toast.error("تعذّر حفظ التقرير، حاول مرة أخرى");
+      const message = typeof err === "object" && err && "message" in err ? String(err.message) : "";
+      if (message.includes("checkin_requires_active_checkout")) {
+        toast.error("لا يمكن الاستلام: يجب أن يكون للمركبة تسليم معتمد ولم تُستلم بعد");
+      } else if (message.includes("checkin_requires_vehicle") || message.includes("checkin_requires_selected_vehicle")) {
+        toast.error("الاستلام متاح للمركبات المرتبطة من السجل فقط");
+      } else {
+        toast.error("تعذّر حفظ التقرير، حاول مرة أخرى");
+      }
     } finally {
       setSaving(false);
     }
@@ -218,6 +240,10 @@ function AiInspectionPage() {
   async function runAnalysis() {
     if (!canAnalyzePhotos(photos.length)) {
       toast.error("التقط صورة واحدة على الأقل");
+      return;
+    }
+    if (kind === "checkin" && !checkinAllowed) {
+      toast.error("اختر مركبة لها تسليم معتمد ولم تُستلم بعد");
       return;
     }
     setLoading(true);
@@ -356,7 +382,7 @@ function AiInspectionPage() {
               />
             </label>
             <datalist id="asset-names">
-              {assets.map((a) => (
+              {selectableAssets.map((a) => (
                 <option key={a.id} value={a.name}>{a.plate}</option>
               ))}
             </datalist>
@@ -365,11 +391,20 @@ function AiInspectionPage() {
               <div className="mt-1.5 grid grid-cols-3 gap-2">
                 {INSPECTION_KINDS.map((k) => (
                   <button key={k} type="button" onClick={() => setKind(k)}
-                    className={`h-10 rounded-lg border text-sm ${kind === k ? "border-primary bg-primary/15 text-foreground" : "border-input bg-secondary/40"}`}>
+                    disabled={k === "checkin" && !!matched && !checkinAllowed}
+                    title={k === "checkin" ? "للمركبات المسلّمة التي لم تُستلم بعد" : undefined}
+                    className={`h-10 rounded-lg border text-sm disabled:cursor-not-allowed disabled:opacity-40 ${kind === k ? "border-primary bg-primary/15 text-foreground" : "border-input bg-secondary/40"}`}>
                     {KIND_LABELS[k]}
                   </button>
                 ))}
               </div>
+              {kind === "checkin" ? (
+                <p className={`mt-2 text-xs ${checkinAllowed ? "text-success" : "text-warning"}`}>
+                  {checkinAllowed && activeCheckout
+                    ? `التسليم المعتمد: ${activeCheckout.date}${activeCheckout.driver ? ` · السائق ${activeCheckout.driver}` : ""}`
+                    : "اختر مركبة لها تسليم معتمد ولم تُستلم بعد. لا يمكن استلام مركبة غير مسلّمة."}
+                </p>
+              ) : null}
             </div>
             {kind !== "periodic" ? (
               <>
@@ -418,7 +453,7 @@ function AiInspectionPage() {
 
           <button
             onClick={runAnalysis}
-            disabled={!canAnalyzePhotos(photos.length) || loading || processing}
+            disabled={!canAnalyzePhotos(photos.length) || loading || processing || (kind === "checkin" && !checkinAllowed)}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
@@ -546,7 +581,7 @@ function AiInspectionPage() {
               <div className="flex flex-wrap gap-2 border-t border-border pt-4">
                 <button
                   onClick={approve}
-                  disabled={saving || saved}
+                  disabled={saving || saved || (kind === "checkin" && !checkinAllowed)}
                   className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
                 >
                   <CheckCircle2 className="size-4" />
